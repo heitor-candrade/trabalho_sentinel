@@ -1,0 +1,125 @@
+% Preâmbulo comum: Operação Sentinel (FEELT37802 - Sistemas Distribuídos 2026/2)
+\PassOptionsToPackage{hyphens,spaces,obeyspaces}{url}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[scaled=0.95]{helvet}   % fonte sem serifa (Helvetica/Arial) no documento todo
+\renewcommand{\familydefault}{\sfdefault}
+\usepackage[brazilian]{babel}
+\usepackage[a4paper,margin=2cm,top=2.2cm,bottom=2cm]{geometry}
+\usepackage{needspace}
+\usepackage{microtype}
+\usepackage{amssymb}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{listings}
+\usepackage[most]{tcolorbox}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.misc,decorations.pathmorphing}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,urlcolor=blue!50!black,citecolor=blue!50!black]{hyperref}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\setlist{itemsep=1pt,topsep=3pt,parsep=0pt}
+\renewcommand{\arraystretch}{1.1}
+
+% ---- cores ----
+\definecolor{azul}{HTML}{1F4E79}
+\definecolor{verde}{HTML}{2E7D32}
+\definecolor{laranja}{HTML}{C75B00}
+\definecolor{vermelho}{HTML}{B3261E}
+\definecolor{cinza}{HTML}{F3F4F6}
+\definecolor{cinzaescuro}{HTML}{555555}
+
+% ---- comandos utilitários ----
+\usepackage{url}
+\DeclareUrlCommand\cmd{\urlstyle{tt}}
+\makeatletter
+\def\UrlBreaks{\do\/\do\-\do\_\do\.\do\=\do\:\do\,\do\)\do\(}
+\makeatother
+\Urlmuskip=0mu plus 2mu
+\newcommand{\seta}{$\rightarrow$}
+\newcommand{\caixa}{\raisebox{-0.15ex}{$\square$}}
+\newcommand{\linhas}[1]{\par\vspace{2pt}\foreach \i in {1,...,#1}{\noindent\rule{\linewidth}{0.3pt}\\[1.15em]}}
+
+% ---- cabeçalho/rodapé (estilo: código e disciplina em negrito à esquerda, professor à direita) ----
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0.4pt}
+\fancyhead[L]{\footnotesize\textbf{FEELT37802 - SISTEMAS DISTRIBUÍDOS (2026/2)}}
+\fancyhead[R]{\footnotesize Prof. Renato Carrijo}
+\fancyfoot[C]{\small\thepage}
+
+% ---- bloco de título: centralizado, negrito, subtítulo menor e filete ----
+\newcommand{\titulosentinel}[2]{%
+  \begin{center}
+    {\LARGE\bfseries #1\par}\vspace{6pt}
+    {\small #2\par}
+  \end{center}\vspace{-6pt}
+  \noindent\rule{\linewidth}{0.5pt}\par\vspace{8pt}}
+
+% ---- bloco da equipe ----
+\newcommand{\blocoequipe}{%
+  \begin{tcolorbox}[colback=cinza,colframe=black!30,boxrule=0.5pt,arc=2pt,left=8pt,right=8pt,top=6pt,bottom=6pt]
+  \noindent\textbf{Equipe:}\ \rule[-2pt]{12.6cm}{0.4pt}\par\vspace{7pt}
+  \noindent\textbf{Líder (quem entrega):}\ \rule[-2pt]{11.1cm}{0.4pt}\par\vspace{7pt}
+  \begin{tabular}{@{}>{\centering\arraybackslash}p{0.8cm}@{\hspace{4pt}}p{8.4cm}@{\hspace{8pt}}p{6.2cm}@{}}
+  \textbf{N.} & \textbf{Integrante} & \textbf{Papel/Função}\\[3pt]
+  1 & \dotfill & \dotfill\\[5pt]
+  2 & \dotfill & \dotfill\\[5pt]
+  3 & \dotfill & \dotfill\\[5pt]
+  4 & \dotfill & \dotfill
+  \end{tabular}
+  \end{tcolorbox}}
+
+% ---- listagens ----
+\lstdefinestyle{shell}{
+  basicstyle=\ttfamily\small,
+  backgroundcolor=\color{cinza},
+  frame=single, rulecolor=\color{black!25},
+  columns=fullflexible, keepspaces=true, breaklines=true, breakatwhitespace=false,
+  postbreak=\mbox{\textcolor{cinzaescuro}{$\hookrightarrow$}\space},
+  xleftmargin=2pt, xrightmargin=2pt, aboveskip=6pt, belowskip=4pt,
+  showstringspaces=false, upquote=true,
+  commentstyle=\color{verde}\itshape,
+  morecomment=[l]{\#},
+  literate=
+    {á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1
+    {â}{{\^a}}1 {ê}{{\^e}}1 {ô}{{\^o}}1 {Â}{{\^A}}1 {Ê}{{\^E}}1 {Ô}{{\^O}}1
+    {ã}{{\~a}}1 {õ}{{\~o}}1 {Ã}{{\~A}}1 {Õ}{{\~O}}1
+    {à}{{\`a}}1 {ç}{{\c c}}1 {Ç}{{\c C}}1 {ü}{{\"u}}1
+}
+\lstset{style=shell}
+\lstnewenvironment{terminal}{\lstset{style=shell}}{}
+\lstdefinestyle{saida}{style=shell, backgroundcolor=\color{white}, frame=leftline, morecomment=[l]{\#}}
+\lstnewenvironment{saida}{\lstset{style=saida}}{}
+
+% ---- caixas ----
+\newtcolorbox{ideia}[1][Ideia-chave]{enhanced,breakable,colback=azul!6,colframe=azul,
+  fonttitle=\bfseries,title={#1},boxrule=0.6pt,arc=2pt,left=6pt,right=6pt,top=3pt,bottom=3pt}
+\newtcolorbox{atencao}[1][Atenção]{enhanced,breakable,colback=laranja!7,colframe=laranja,
+  fonttitle=\bfseries,title={#1},boxrule=0.6pt,arc=2pt,left=6pt,right=6pt,top=3pt,bottom=3pt}
+\newtcolorbox{perigo}[1][Cuidado]{enhanced,breakable,colback=vermelho!6,colframe=vermelho,
+  fonttitle=\bfseries,title={#1},boxrule=0.6pt,arc=2pt,left=6pt,right=6pt,top=3pt,bottom=3pt}
+\newtcolorbox{prever}[1][Preveja antes de executar]{enhanced,breakable,colback=verde!6,colframe=verde,
+  fonttitle=\bfseries,title={#1},boxrule=0.6pt,arc=2pt,left=6pt,right=6pt,top=3pt,bottom=3pt}
+\newtcolorbox{evid}[1][Evidência a registrar]{enhanced,breakable,colback=white,colframe=black!55,
+  fonttitle=\bfseries,title={#1},boxrule=0.6pt,arc=2pt,left=6pt,right=6pt,top=3pt,bottom=3pt}
+\newtcolorbox{checagem}[1][Pergunta de checagem]{enhanced,breakable,colback=black!3,colframe=black!40,
+  fonttitle=\bfseries,title={#1},boxrule=0.5pt,arc=2pt,left=6pt,right=6pt,top=3pt,bottom=3pt}
+
+% ---- títulos de hora ----
+\newcommand{\hora}[3]{%
+  \Needspace{14\baselineskip}\vspace{6pt}\phantomsection
+  \begin{tcolorbox}[enhanced,colback=azul,colframe=azul,coltext=white,arc=3pt,boxrule=0pt,left=8pt,right=8pt,top=5pt,bottom=5pt]
+    {\Large\bfseries Hora #1 -- #2}\hfill {\normalsize #3}
+  \end{tcolorbox}
+  \addcontentsline{toc}{section}{Hora #1 -- #2}
+  \vspace{2pt}}

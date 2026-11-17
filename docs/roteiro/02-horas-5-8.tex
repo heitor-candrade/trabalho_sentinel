@@ -1,0 +1,258 @@
+% ------------------------------------------------------------
+\hora{5}{Watchdog e observabilidade}{Entrega D \,·\, Observabilidade}
+% ------------------------------------------------------------
+
+\textbf{Objetivo.} Medir saúde, latência e falhas por um observador \emph{independente} e definir alertas com
+limiares justificados.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Conheça o watchdog} (\cmd{watchdog/watchdog.py}): \cmd{INTERVALO=5}~s, \cmd{TIMEOUT=2}~s, DOWN após
+        \cmd{LIMITE_FALHAS=3}, UP após \cmd{LIMITE_SUCESSOS=2}. Abra o \textbf{painel} (\cmd{http://localhost:8085}) e compare o que ele mostra
+        com o \cmd{/state} abaixo (o painel só repete o que o watchdog diz). Explore o Prometheus em \cmd{http://localhost:9090}
+        (Status \seta\ Targets; Alerts; Graph):
+\begin{terminal}
+$ docker compose exec -T toolbox curl -s http://watchdog:9100/state | jq .
+$ docker compose exec -T toolbox /opt/sentinel/sli.sh
+$ docker compose exec -T toolbox /opt/sentinel/promq.sh 'watchdog_target_down'
+\end{terminal}
+  \item \textbf{SLIs antes de alertas.} Defina 3 indicadores (o que mede, como calcular, meta e janela) e escolha 5
+        métricas do Apêndice~\ref{ap:metricas}, dizendo qual dos quatro sinais cada uma representa.
+  \item \textbf{3 alertas + 1 sobre o próprio monitor.} Edite \cmd{prometheus/alerts.yml} (há um exemplo;
+        \cmd{alerts.exemplo.yml} traz ideias \emph{não carregadas}) e aplique:
+\begin{terminal}
+$ scripts/validar.sh --recarregar      # promtool confere; recarrega sem reiniciar
+$ docker compose exec -T toolbox curl -s http://prometheus:9090/api/v1/rules | jq '.data.groups[].rules[].name'
+\end{terminal}
+\end{enumerate}
+
+\begin{atencao}[Antes de escrever uma expressão de alerta]
+(a) O que ela retorna \emph{se a métrica deixar de existir}? Alerta sem dados \textbf{nunca dispara}.
+(b) Que falha ela não enxerga? (c) O limiar vem de uma conta do sistema (\emph{3 falhas $\times$ 5~s = 15~s}) ou é chute?
+\end{atencao}
+
+\Needspace{14\baselineskip}
+\begin{center}
+\textbf{Item D -- Alertas (o primeiro é o exemplo do enunciado)}\\[2pt]
+\begin{tabularx}{\linewidth}{@{}>{\raggedright}p{2.2cm}>{\raggedright}p{3.4cm}>{\raggedright}X>{\raggedright\arraybackslash}p{2.1cm}@{}}
+\toprule
+\textbf{Alerta} & \textbf{Condição e limiar} & \textbf{Justificativa e resposta} & \textbf{Severidade / dono}\\ \midrule
+Nó down & \cmd{watchdog_target_down == 1} por 15~s & 3 falhas $\times$ 5~s evitam alarme por perda isolada. Resposta: logs e teste de outro ponto. & Alta / plantão\\ \midrule
+\rule{0pt}{2.6em} & & & \\ \midrule
+\rule{0pt}{2.6em} & & & \\ \midrule
+\rule{0pt}{2.6em} & & & \\ \midrule
+\rule{0pt}{2.6em}\textit{(monitor)} & & & \\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{checagem}
+(i) Por que o watchdog roda \emph{fora} dos nós? Qual o ponto único de falha do próprio monitor? (ii) O que são falso
+positivo e falso negativo no seu alerta de nó down? (iii) A latência medida \emph{no nó} basta para saber o que o
+usuário vê? O que falta? (iv) O painel mostra \emph{verde} e o usuário recebe erro: que falha do watchdog explicaria isso?
+\end{checagem}
+
+\begin{evid}
+\cmd{prometheus/alerts.yml} versionado; \cmd{docs/D-plano-de-monitoramento.md} com SLIs, 5 métricas e alertas; saídas de
+\cmd{sli.sh} e \cmd{promq.sh} em \cmd{evidencias/hora5-*.txt}; captura do painel em estado normal. Teste os alertas na Hora 6.
+\end{evid}
+
+% ------------------------------------------------------------
+\hora{6}{Experimentos de resiliência}{Entrega E \,·\, todos}
+% ------------------------------------------------------------
+
+\textbf{Objetivo.} Provocar falhas \emph{uma de cada vez}, prever o resultado e comparar com o observado,
+incluindo \textbf{falhas de rede}.
+
+\begin{perigo}[Regras]
+Uma falha por vez, sem carga agressiva (o fundo é 3 req/s). Volte ao normal antes do próximo:
+\cmd{scripts/chaos.sh limpar todos} e \cmd{scripts/status.sh}.
+\end{perigo}
+
+\subsection*{Falhas de rede (\cmd{chaos.sh})}
+Anexa uma imagem com \cmd{tc} à rede de um contêiner e configura o \cmd{netem} do kernel na \textbf{saída} dele:
+atrasar ou perder a saída de A equivale a atrasar ou perder as \emph{respostas} de A. Vale para todos os destinos
+ou só para um (\cmd{--para}). Some ao recriar o contêiner.
+
+\begin{terminal}
+$ scripts/chaos.sh atraso   rust-a 800        # +800 ms em todas as respostas de A
+$ scripts/chaos.sh perda    rust-a 30         # 30% dos pacotes de saída de A se perdem
+$ scripts/chaos.sh particao rust-a            # A vivo, mas isolado da rede
+$ scripts/chaos.sh status ; scripts/chaos.sh captura rust-a 10 ; scripts/chaos.sh limpar todos
+\end{terminal}
+
+\begin{atencao}[Limite do modelo]
+Uma interface virtual por contêiner, efeito só na saída, sem roteadores nem hardware independente: conclusões sobre
+rede \emph{real} exigem cuidado. Registre isso nos ``limites da simulação''.
+\end{atencao}
+
+\subsection*{Os experimentos}
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}c>{\raggedright}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{N.} & \textbf{Falha} & \textbf{O que observar}\\ \midrule
+1 & Parar o Rust A (\cmd{experimento.sh 1}) & retries e tempos no Nginx; watchdog; alerta de nó down\\
+2 & Latência de aplicação 2500~ms em A (\cmd{experimento.sh 2}) & Nginx tolera (leitura 3~s)? o watchdog (2~s) concorda?\\
+3 & Interromper o watchdog (\cmd{experimento.sh 3}) & o serviço muda? o que avisa que o monitor parou?\\
+4 & Respostas de erro, \cmd{GET /erro} (\cmd{experimento.sh 4}) & taxa de erro; o Nginx repete em 500?\\
+5+ & \textbf{Extras (mínimo 2, ao menos 1 de rede):} atraso, perda ou partição com \cmd{chaos.sh}; \cmd{ready=0} com \cmd{admin.sh} & o que o Docker diz? compare com o experimento 1\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Repita para cada um:} (1) ligue o fundo, \cmd{scripts/requests.sh fundo start}, e acompanhe no \textbf{painel} (\cmd{http://localhost:8085}) e, em outro terminal,
+\cmd{scripts/status.sh --vivo}; (2) rode \cmd{scripts/experimento.sh <n>}, que pede \emph{sua} previsão, mede o antes,
+injeta, mede o durante, recupera e confere (saída em \cmd{evidencias/exp<n>_<data>/}); (3) para os extras, escreva a
+previsão e use \cmd{scripts/evidence.sh <rotulo> --rede} antes e depois; (4) preencha uma linha da matriz e consulte
+\cmd{http://localhost:9090/alerts} nos experimentos 1, 3 e 4: o que disparou, \emph{quando} e o que \emph{não} disparou?
+
+\begin{prever}[Pense antes]
+\textbf{Exp.~2:} 2500~ms $<$ 3~s mas $>$ 2~s: quem considera A ``fora''? \,
+\textbf{Exp.~3:} o \cmd{up{job="watchdog"}} muda? seu alerta ainda recebe dados? \,
+\textbf{Atraso de rede 800~ms} $\neq$ 800~ms por requisição: quantas idas e voltas ela tem?
+\end{prever}
+
+\Needspace{16\baselineskip}
+\begin{center}
+\textbf{Item E -- Matriz de experimentos (mínimo 6 linhas: 4 do enunciado e 2 extras, um deles de rede)}\\[2pt]
+\begin{tabularx}{\linewidth}{@{}>{\raggedright}p{2.5cm}>{\raggedright}p{2.5cm}>{\raggedright}X>{\raggedright}p{2.8cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Hipótese} & \textbf{Procedimento} & \textbf{Esperado} & \textbf{Evidência} & \textbf{Conclusão}\\ \midrule
+Parar A não derruba o serviço. & \cmd{stop rust-a}; 20 curl. & 200 por B; algumas com atraso até 1~s. & Log do Nginx com \cmd{node=rust-b}. & Confirmada; $n$ requisições levaram $\sim$1~s.\\ \midrule
+\rule{0pt}{2.8em} & & & & \\ \midrule
+\rule{0pt}{2.8em} & & & & \\ \midrule
+\rule{0pt}{2.8em} & & & & \\ \midrule
+\rule{0pt}{2.8em} & & & & \\ \midrule
+\rule{0pt}{2.8em} & & & & \\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{checagem}
+(i) Sua previsão acertou? Onde divergiu e qual era o modelo mental errado? (ii) Em qual experimento o sistema
+\emph{pareceu} saudável e não estava? (iii) Como você \emph{provou} que, após recuperar, não há reinício em loop e o
+tráfego voltou ao nó?
+\end{checagem}
+
+% ------------------------------------------------------------
+\hora{7}{Incidente surpresa}{Entrega F (rascunho)}
+% ------------------------------------------------------------
+
+\textbf{Objetivo.} Diagnosticar um incidente \emph{ambíguo} sem concluir nada que não tenha evidência.
+
+\begin{ideia}[O servidor está vivo, mas o sistema não confia nele]
+O professor revela os eventos \emph{em etapas}, em horários que aparecem nos seus logs (UTC). A equipe decide se retira
+um nó, se reinicia algo ou se aguarda, e \textbf{coleta os dados que faltam}. Há mais de uma causa possível; o que
+existe é uma forma correta de \emph{chegar} a uma decisão.
+\end{ideia}
+
+\textbf{Antes (5 min):} estado normal (\cmd{scripts/status.sh}, \cmd{scripts/chaos.sh status} sem regras); papéis
+(comandante, logs, métricas, relator); \cmd{scripts/requests.sh fundo start} e \cmd{scripts/evidence.sh linha-de-base}.
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}lX@{}}
+\toprule
+\textbf{Horário (UTC)} & \textbf{Evento (o professor informa os horários reais)}\\ \midrule
+HH:MM:00 & O watchdog marca Rust A como DOWN após três verificações sem resposta.\\
+HH:MM:10 & O Nginx ainda registra respostas 200 de algumas requisições encaminhadas a Rust A.\\
+HH:MM:20 & A latência global aumentou; Rust B recebe mais tráfego.\\
+HH:MM:20 & O painel de métricas do watchdog deixa de atualizar, mas não há alerta explícito sobre o monitor.\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Missão:} (1) linha do tempo; (2) separar \textbf{fatos} de \textbf{inferências}; (3) pelo menos
+\textbf{três hipóteses}; (4) a próxima verificação mais informativa; (5) decidir se \textbf{retira A} ou
+\textbf{reinicia algo}, com os riscos; (6) como confirmar a recuperação.
+
+\begin{perigo}[Regras do incidente]
+\textbf{Ninguém afirma que um componente morreu sem indicar a evidência.} Não reinicie nada antes de
+\cmd{scripts/evidence.sh antes-do-reinicio}. Pergunte-se: \emph{quem diz que A caiu, o nó ou o observador? Nginx e
+watchdog veem o mesmo caminho de rede? Qual a idade da última métrica?}
+\end{perigo}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright}p{6.4cm}X@{}}
+\toprule
+\textbf{Comando} & \textbf{Responde a}\\ \midrule
+\cmd{scripts/status.sh} \,/\, \cmd{status.sh --usuario --desde 3m} & estado consolidado; o que o usuário viu (nós, retries, p95)\\
+\cmd{docker compose logs --since 3m nginx|rust-a|watchdog} & o que cada um registrou (\cmd{upstream_status}, \cmd{client=}, \cmd{reason=})\\
+\cmd{docker compose exec -T toolbox curl -s -m 2 http://rust-a:8080/health/ready} & A responde \emph{a um terceiro ponto}?\\
+\cmd{.../promq.sh 'time() - watchdog_last_probe_timestamp_seconds'} e \cmd{'up'} & idade da última sondagem; o Prometheus coleta cada alvo?\\
+\cmd{http://localhost:8085} (painel) & estado dos nós \emph{segundo o watchdog}, com histórico de 5~min; não prova a causa\\
+\cmd{scripts/chaos.sh captura rust-a 10} \,/\, \cmd{chaos.sh status} & pacotes reais na interface de A; regras de rede ativas\\
+\cmd{scripts/evidence.sh <rotulo> --rede} & congela o estado antes de mexer em algo\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright}p{2.6cm}>{\raggedright}p{4.4cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Ação} & \textbf{Como} & \textbf{Benefício e risco}\\ \midrule
+Aguardar e coletar & \cmd{evidence.sh} a cada 2 min & não altera o sistema; usuários seguem afetados\\ \midrule
+Retirar A do Nginx & \cmd{admin.sh pool drenar rust-a} (desfaz com \cmd{pool restaurar}) & tira o suspeito do caminho; B sozinho vira SPOF e recebe tudo\\ \midrule
+Reiniciar A / watchdog & \cmd{docker compose restart <svc>} & às vezes ``limpa'' o estado; \textbf{destrói evidência} e esconde a causa\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Seus registros} (fatos com evidência e horário; hipóteses com o que as confirma ou refuta; próxima verificação; decisão e
+reversibilidade; como confirmar a recuperação):
+\linhas{7}
+
+\begin{evid}
+\cmd{evidencias/hora7-*}: saída de \cmd{evidence.sh} antes de qualquer ação, linha do tempo, trechos de log que sustentam
+cada fato e a decisão tomada, com horário.
+\end{evid}
+
+% ------------------------------------------------------------
+\hora{8}{Análise, entrega e demonstração}{Entregas F, G, H}
+% ------------------------------------------------------------
+
+\textbf{Objetivo.} Fechar os artefatos, revisar os limites da simulação e demonstrar.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Relatório de incidente (F):} (1) resumo em 3 linhas; (2) linha do tempo; (3) fatos $\times$ inferências;
+        (4) hipóteses e como foram testadas; (5) decisão, riscos, reversibilidade; (6) prevenção; (7) limites da simulação.
+  \item \textbf{README (G) reproduzível.} Clone numa pasta nova, rode \cmd{scripts/remover-tudo.sh --tudo} (veja antes com \cmd{--simular}) e depois \emph{só}
+        o que o README manda: alguém de fora deve conseguir subir, testar, provocar uma falha, recuperar e limpar.
+  \item \textbf{Limites e melhoria:} o que o laboratório \emph{não} prova (um host, um kernel e relógio, sem falhas
+        independentes, sem rede real)? Proponha uma melhoria priorizada e um teste futuro (sondagem ativa no Nginx,
+        \emph{readiness} consultada pelo balanceador, alerta sobre o monitor, segundo watchdog, circuit breaker).
+  \item \textbf{Ensaie a demonstração} com cronômetro (\cmd{scripts/setup.sh --limpo} antes) e empacote:
+        \cmd{git add -A && git commit -m "pacote final"; git archive --format=zip -o ../sentinel-equipe-X.zip HEAD}.
+\end{enumerate}
+
+\textbf{Demonstração ao vivo (5 min): narre o que \emph{espera} ver antes de cada comando.}
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}c>{\raggedright}p{2.5cm}>{\raggedright}Xr@{}}
+\toprule
+\textbf{N.} & \textbf{Passo} & \textbf{Comando e fala} & \textbf{Tempo}\\ \midrule
+1 & Estado inicial & \cmd{docker compose ps} e o \textbf{painel} (\cmd{localhost:8085}); apontar no diagrama quem é quem (A em actix, B em axum) & 30~s\\
+2 & Fluxo normal & \cmd{scripts/requests.sh 6}; alternância A/B; mesmo \cmd{request_id} nos logs do Nginx e do Rust & 45~s\\
+3 & Falha de um nó & \cmd{docker compose stop rust-a}; previsão; serviço continua; DOWN no watchdog e o painel muda para vermelho & 90~s\\
+4 & Vivo, não pronto & \cmd{scripts/admin.sh ready rust-b 0}; \cmd{live} 200 e \cmd{ready} 503; recuperar com \cmd{ready rust-b 1} e \cmd{docker compose start rust-a} & 75~s\\
+5 & Falha do monitor & \cmd{docker compose stop watchdog}; alerta de ``última sondagem antiga''; o painel avisa que o watchdog não responde; \emph{quem vigia o vigia?} & 45~s\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\textbf{Checklist:} \caixa\ ambiente limpo e testado \quad \caixa\ comandos num arquivo de roteiro \quad \caixa\ plano B (vídeo
+de até 2 min ou prints com horário) \quad \caixa\ sem senhas na tela \quad \caixa\ todos falam \quad \caixa\ cronometrada: cabe em 5 min.
+
+\begin{ideia}[Se algo der errado ao vivo]
+Narre o que viu, formule uma hipótese e diga como a testaria: isso também é avaliado. O professor pode pedir que a
+equipe reproduza uma falha da sua matriz.
+\end{ideia}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}clX@{}}
+\toprule
+ & \textbf{Entrega} & \textbf{Onde fica}\\ \midrule
+\caixa & A -- diagrama e SPOFs & \cmd{docs/A-*}\\
+\caixa & B -- compose e configs executáveis & \cmd{docker-compose.yml}, \cmd{rust-app/}, \cmd{watchdog/}\\
+\caixa & C -- Nginx comentado e fluxo & \cmd{nginx/nginx.conf}, \cmd{docs/C-*}\\
+\caixa & D -- 5 métricas, 3 alertas, limiares & \cmd{prometheus/alerts.yml}, \cmd{docs/D-*}\\
+\caixa & E -- matriz de experimentos & \cmd{docs/E-matriz.md}, \cmd{evidencias/exp*}\\
+\caixa & F -- relatório de incidente & \cmd{docs/F-relatorio.pdf}\\
+\caixa & G -- README (iniciar, testar, falhar, recuperar, limpar) & \cmd{README.md}\\
+\caixa & H -- slides (preliminar e final) & \cmd{docs/H-*}\\ \bottomrule
+\end{tabularx}
+\end{center}

@@ -1,0 +1,183 @@
+% ============================================================
+\Needspace{22\baselineskip}
+\section{As oito horas}
+% ============================================================
+
+% ------------------------------------------------------------
+\hora{1}{Briefing e desenho}{Entrega A \,·\, sem código}
+% ------------------------------------------------------------
+
+\textbf{Objetivo.} Mapear onde o sistema pode quebrar \emph{antes} de escrever qualquer configuração.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Componentes e dependências (15 min).} Para cada componente da Figura~1, liste de quem ele depende,
+        incluindo o que não está desenhado: DNS interno do Docker, a rede virtual única, o disco dos logs, o relógio.
+  \item \textbf{Diagrama com SPOFs (20 min).} Desenhe a arquitetura e marque \textcolor{vermelho}{em vermelho} cada
+        ponto único de falha. O Nginx é SPOF? E o watchdog? E o Prometheus? E a máquina que roda tudo?
+  \item \textbf{Três hipóteses (25 min)} no formato ``\textbf{Se} [evento], \textbf{então} [efeito mensurável],
+        \textbf{porque} [mecanismo]'': uma sobre \emph{rede} (atraso, perda, partição), uma sobre
+        \emph{observabilidade} (monitor errado, métrica ausente) e uma livre. ``O sistema ficará instável'' não é
+        hipótese: não dá para refutar.
+\end{enumerate}
+
+\begin{center}
+\begin{tabularx}{\linewidth}{@{}c>{\raggedright}X>{\raggedright}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\# & \textbf{Se (evento)} & \textbf{então (efeito mensurável)} & \textbf{porque (mecanismo)}\\ \midrule
+1 & \rule{0pt}{3em} & & \\ \midrule
+2 & \rule{0pt}{3em} & & \\ \midrule
+3 & \rule{0pt}{3em} & & \\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{checagem}
+(i) Se o Nginx cair, o que o usuário vê e quem percebe? (ii) Quem vigia o vigia? (iii) Duas instâncias
+\emph{iguais} atrás de um balanceador protegem contra um \emph{bug} que existe nas duas?
+\end{checagem}
+
+\begin{evid}[Entrega A]
+\cmd{docs/A-arquitetura.pdf} com os SPOFs marcados e \cmd{docs/A-hipoteses.md}. Primeiro commit:
+\cmd{git add docs && git commit -m "A: arquitetura e hipoteses"}.
+\end{evid}
+
+% ------------------------------------------------------------
+\hora{2}{Topologia em contêineres}{Entrega B \,·\, Infra}
+% ------------------------------------------------------------
+
+\textbf{Objetivo.} Subir tudo numa rede Compose e saber verificar estado e logs de cada serviço.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Versione e leia o \cmd{docker-compose.yml}.} Responda por escrito: que portas são \emph{publicadas}
+        e por quê só essas? Para que servem IPs fixos? O que faz \cmd{depends_on} com \cmd{service_healthy}?
+\begin{terminal}
+$ cd sentinel-lab && git init && git add -A && git commit -m "kit inicial"
+\end{terminal}
+  \item \textbf{Monte tudo.} Enquanto o Rust compila, leia \cmd{rust-app/src/main.rs} e \cmd{watchdog/watchdog.py}.
+\begin{terminal}
+$ scripts/setup.sh --verificar     # só confere pré-requisitos, portas e sub-rede
+$ scripts/setup.sh                 # constrói, sobe, espera ficar saudável, teste de fumaça
+$ scripts/status.sh ; curl -i http://localhost:8080/
+\end{terminal}
+        Abra também o \textbf{painel} em \cmd{http://localhost:8085}: tudo deve estar verde. Releia a Seção~\ref{sec:conteineres} e confira, em \cmd{docker compose ps}, cada contêiner descrito lá.
+  \item \textbf{Prove que o administrativo não está exposto} e entre na rede pela toolbox:
+\begin{terminal}
+$ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/admin/ready?v=0   # esperado: 404
+$ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/metrics           # esperado: 404
+$ docker compose exec toolbox sh -c 'curl -s http://rust-a:8080/health/live; dig +short rust-a'
+\end{terminal}
+\end{enumerate}
+
+\begin{prever}
+O que faz \cmd{curl http://rust-a:8080/} \emph{no host}? E dentro da toolbox? Por quê?
+\end{prever}
+
+\begin{checagem}
+(i) Por que o Nginx só inicia depois que os dois nós estão saudáveis? (ii) O \cmd{HEALTHCHECK} do Docker verifica
+\emph{liveness} ou \emph{readiness}? (iii) E se der \cmd{docker compose down}, o que acontece com os dados do Prometheus?
+\end{checagem}
+
+\begin{evid}
+\cmd{docker compose ps > evidencias/hora2-ps.txt}; \cmd{docker compose logs --tail=30 > evidencias/hora2-logs.txt}; captura de tela do painel;
+commit \cmd{"B: topologia sobe"}. \textbf{Problemas:} porta ocupada \seta\ \cmd{HOST_PORT} no \cmd{.env}; sub-rede
+em conflito (VPN) \seta\ \cmd{NET_PREFIX} (ex.: \cmd{10.78.0}) e \cmd{scripts/setup.sh --limpo}.
+\end{evid}
+
+% ------------------------------------------------------------
+\hora{3}{Serviço Rust e health checks}{Entrega B (parte) \,·\, Aplicação}
+% ------------------------------------------------------------
+
+\textbf{Objetivo.} Entender \emph{liveness}, \emph{readiness} e métricas, e derrubar a prontidão de propósito.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Rotas} (\cmd{rust-app/src/main.rs}): \cmd{/} diz ``atendido por <nó>''; \cmd{/health/live} é 200 se o
+        processo responde; \cmd{/health/ready} é 200 ou 503; \cmd{/metrics} é texto Prometheus; \cmd{/admin/*} só na rede interna.
+  \item \textbf{Vivo, mas não pronto:} compare as respostas antes e depois.
+\begin{terminal}
+$ T="docker compose exec -T toolbox curl -s -o /dev/null -w"
+$ $T '%{http_code}\n' http://rust-a:8080/health/ready ; scripts/admin.sh ready rust-a 0
+$ $T '%{http_code}\n' http://rust-a:8080/health/live ; $T '%{http_code}\n' http://rust-a:8080/health/ready
+$ scripts/admin.sh ready rust-a 1 ; scripts/requests.sh 10     # a coluna "no" deve alternar A/B
+\end{terminal}
+  \item \textbf{Latência de aplicação:} \cmd{scripts/admin.sh atraso rust-a 1500}; meça o tempo de \cmd{/}, \cmd{/health/live}
+        e \cmd{/health/ready} (use \texttt{-w '\%\{time\_total\}s\textbackslash n'} no mesmo \texttt{curl}); volte com \cmd{atraso rust-a 0}.
+  \item \textbf{Duas bibliotecas, um contrato.} O A usa \textbf{actix-web} e o B usa \textbf{axum}. Compare:
+\begin{terminal}
+$ docker compose logs rust-a rust-b | grep event=start          # framework=actix-web / axum
+$ for n in a b; do docker compose exec -T toolbox curl -si http://rust-$n:8080/ | head -6; done
+$ docker compose exec -T toolbox sh -c 'curl -s http://rust-a:8080/metrics | grep sentinel_info'
+\end{terminal}
+        Em \cmd{rust-a/src/main.rs} e \cmd{rust-b/src/main.rs}, ache onde cada um declara as rotas, o estado
+        compartilhado e o \emph{middleware} do \cmd{request_id}. O que muda no código? O que \emph{não} muda para quem chama?
+  \item \textbf{Aquecimento e métricas:} \cmd{docker compose restart rust-a} e sonde \cmd{/health/ready} por 8~s
+        (\cmd{WARMUP_SECONDS}). Em \cmd{/metrics}, classifique cada métrica (contador, medidor, histograma) e o sinal
+        que mede (disponibilidade, latência, erro, saturação).
+\end{enumerate}
+
+\begin{prever}
+Com \cmd{ready=0}: quais endpoints mudam? O \emph{Nginx} deixa de enviar tráfego ao A? (Confirme na Hora 4.)
+\end{prever}
+
+\begin{checagem}
+(i) Por que \cmd{/health/ready} sofre o atraso artificial e \cmd{/health/live} não? (ii) Por que o nó fica \emph{não
+pronto} nos primeiros segundos? (iii) Se \cmd{live} dependesse de um banco que caiu, reiniciar resolveria?
+(iv) Duas implementações do mesmo contrato (actix e axum) protegem contra um bug \emph{do seu código}? E contra um bug \emph{de uma biblioteca}?
+\end{checagem}
+
+\begin{evid}
+Saídas dos passos 2 e 3 em \cmd{evidencias/hora3-*.txt}, com horário (\cmd{date -u}).
+\end{evid}
+
+% ------------------------------------------------------------
+\hora{4}{Nginx e balanceamento}{Entrega C \,·\, Infra}
+% ------------------------------------------------------------
+
+\textbf{Objetivo.} Observar distribuição, remoção de um nó e retries, com timeouts configurados.
+
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{Leia o \cmd{nginx/nginx.conf}} e comente, com suas palavras, o que cada uma faz e o que acontece
+        sem ela: \cmd{log_format}, \cmd{max_fails}/\cmd{fail_timeout}, os três \cmd{proxy_*_timeout},
+        \cmd{proxy_next_upstream} e os blocos que devolvem 404.
+  \item \textbf{Nó parado:} compare 20 requisições com A no ar e com A parado.
+\begin{terminal}
+$ scripts/requests.sh 20 ; scripts/status.sh --usuario --desde 2m
+$ docker compose stop rust-a ; scripts/requests.sh 20 ; scripts/status.sh --usuario --desde 2m
+$ docker compose logs --no-log-prefix --since 2m nginx | grep -E 'upstream_status=[0-9]+,'   # retries
+$ docker compose start rust-a
+\end{terminal}
+  \item \textbf{Quebre a configuração e desfaça:} apague um \cmd{;} no \cmd{nginx.conf};
+        \cmd{scripts/validar.sh} aponta a linha; \cmd{scripts/validar.sh --recarregar} recusa; \cmd{git checkout nginx/nginx.conf}.
+  \item \textbf{Decisão reversível:} \cmd{scripts/admin.sh pool drenar rust-a ; scripts/requests.sh 10 ; scripts/admin.sh pool restaurar rust-a}.
+  \item \textbf{Correlacione pelo \cmd{request_id}:}
+\begin{terminal}
+$ RID=$(curl -s -D - -o /dev/null localhost:8080/ | tr -d '\r' | awk -F': ' 'tolower($1)=="x-request-id"{print $2}')
+$ docker compose logs --no-log-prefix --since 1m nginx rust-a rust-b | grep "request_id=$RID"
+\end{terminal}
+\end{enumerate}
+
+\begin{prever}
+Com A parado: das 20 requisições, quantas dão 200? Quantas demoram $\sim$1~s? Por que depois de algumas deixam de
+demorar? (\cmd{max_fails=3}, \cmd{fail_timeout=10s}.)
+\end{prever}
+
+\begin{atencao}[Retry amplifica carga]
+Cada falha repetida em outro nó dobra o trabalho do nó restante, por isso \cmd{proxy_next_upstream_tries 2} e só para
+\cmd{GET}. Por que \emph{não} repetir um \cmd{POST} que cobra um cartão?
+\end{atencao}
+
+\begin{center}
+\begin{tabularx}{0.8\linewidth}{@{}XXXX@{}}
+\toprule
+\textbf{Rust A} & \textbf{Rust B} & \textbf{A parado: A} & \textbf{A parado: B}\\ \midrule
+\rule{0pt}{1.8em} & & & \\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{checagem}
+(i) Por que timeouts de 1, 3 e 3~s e não 60~s? (ii) O Nginx de código aberto sonda a saúde sozinho? (iii) Com
+\cmd{ready=0} no A, o Nginx continuou enviando tráfego? Quem \emph{deveria} agir?
+\end{checagem}
+
+\begin{evid}[Entrega C]
+\cmd{docs/C-nginx-comentado.conf}, \cmd{docs/C-fluxo.md} (os 5 passos de uma requisição com um \cmd{request_id}
+real: cliente, Nginx, nó, log do Rust, log do Nginx) e saídas dos passos 2 e 5 em \cmd{evidencias/hora4-*.txt}.
+\end{evid}

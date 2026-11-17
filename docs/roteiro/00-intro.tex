@@ -1,0 +1,196 @@
+% ============================================================
+\section{Como usar este roteiro}
+% ============================================================
+
+Complementa o enunciado \emph{Operação Sentinel}: o enunciado diz \emph{o que} entregar; aqui está o
+\emph{passo a passo} em \textbf{Docker}, com scripts para montar o ambiente, provocar falhas de rede e coletar
+evidências. Cada hora tem: \textbf{Objetivo}, \textbf{Passos} (comandos na ordem), \textbf{Preveja antes},
+\textbf{Evidência} (arquivo em \cmd{evidencias/}) e \textbf{Checagem}.
+
+\begin{ideia}[Regra de todas as horas: preveja, observe, compare]
+Antes de cada experimento escreva: ``\textbf{Se} [evento], \textbf{então} [efeito], \textbf{porque} [mecanismo]''.
+Depois compare com o observado. Divergir da previsão não é erro: é o que mais ensina. Toda afirmação do
+relatório aponta para um arquivo de evidência.
+\end{ideia}
+
+\textbf{Pré-requisitos.} Linux com Docker Engine e Compose v2 (usuário no grupo \cmd{docker}); \cmd{bash},
+\cmd{curl}, \cmd{awk}, \cmd{git}; cerca de 4~GB livres; 3 a 8 minutos na primeira construção (os dois nós Rust
+compilam dentro do Docker). Para falhas de rede, módulos \cmd{sch_netem}, \cmd{sch_prio}, \cmd{cls_u32}
+(Ubuntu: \cmd{sudo apt install linux-modules-extra-$(uname -r)} e \cmd{sudo modprobe sch_netem sch_prio cls_u32}).
+O \cmd{scripts/setup.sh} confere tudo isso e avisa.
+
+\begin{perigo}[Limites do laboratório]
+A rede é \textbf{simulada pelo Docker em uma única máquina}: não equivale a várias máquinas, zonas de
+disponibilidade ou falhas independentes reais. Nada de carga agressiva, de ataque a sistemas externos, de portas
+administrativas expostas, de senhas ou tokens no repositório, nem de comandos destrutivos fora da pasta do projeto.
+O professor pode interromper qualquer experimento que afete o computador do laboratório.
+\end{perigo}
+
+\textbf{Papéis sugeridos:} \emph{Infra} (Compose, Nginx), \emph{Aplicação} (Rust, health checks),
+\emph{Observabilidade} (watchdog, painel, alertas) e \emph{Relator} (evidências, relatório). Em equipes menores,
+acumulem papéis e troquem a cada duas horas.
+
+% ------------------------------------------------------------
+\subsection{Arquitetura}
+% ------------------------------------------------------------
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[scale=0.8,transform shape,
+  font=\small,
+  box/.style={draw=azul,fill=azul!8,rounded corners=2pt,minimum width=30mm,minimum height=9mm,align=center,thick},
+  obs/.style={draw=verde,fill=verde!8,rounded corners=2pt,minimum width=30mm,minimum height=9mm,align=center,thick},
+  tool/.style={draw=black!50,fill=black!4,rounded corners=2pt,minimum width=26mm,minimum height=9mm,align=center},
+  user/.style={->,>=Stealth,thick,azul},
+  watch/.style={->,>=Stealth,thick,dashed,verde!60!black},
+  chaos/.style={->,>=Stealth,thick,densely dotted,vermelho},
+  lbl/.style={font=\scriptsize,inner sep=2pt}]
+\node[tool] (cli) at (0,3.6) {cliente \cmd{curl}};
+\node[box]  (ngx) at (0,1.9) {\textbf{Nginx}\\\scriptsize .10 \,:80 (host :8080)};
+\node[box]  (ra)  at (-3,0)  {\textbf{Rust A}\\\scriptsize .11 \,:8080 \,actix-web};
+\node[box]  (rb)  at (3,0)   {\textbf{Rust B}\\\scriptsize .12 \,:8080 \,axum};
+\node[obs]  (wd)  at (-3,-2.4) {\textbf{Watchdog}\\\scriptsize .20 \,:9100};
+\node[obs]  (pr)  at (3,-2.4)  {\textbf{Prometheus}\\\scriptsize .30 \,127.0.0.1:9090};
+\node[obs]  (pn)  at (-3,-4.4) {\textbf{Painel}\\\scriptsize .50 \,127.0.0.1:8085};
+\node[tool] (tb)  at (-7.2,-2.4) {\textbf{toolbox}\\\scriptsize .40 (operação)};
+\node[tool,draw=vermelho,fill=vermelho!6] (ch) at (7.2,0) {\textbf{chaos}\\\scriptsize \cmd{tc netem}};
+\draw[user] (cli) -- (ngx);
+\draw[user] (ngx.south west) -- (ra.north);
+\draw[user] (ngx.south east) -- (rb.north);
+\draw[watch,-] (-4.6,-1.2) -- (4.6,-1.2);
+\draw[watch,-] (ra.south) -- (-3,-1.2);
+\draw[watch,-] (rb.south) -- (3,-1.2);
+\draw[watch,-] (wd.north) -- (-3,-1.2);
+\draw[watch,-] (pr.north) -- (3,-1.2);
+\node[lbl,fill=white] at (0.4,-1.2) {sondas \cmd{/health/ready} e coleta \cmd{/metrics}};
+\draw[watch] (pr.west) -- node[lbl,above]{\cmd{/metrics}} (wd.east);
+\draw[watch] (pn.north) -- node[lbl,right]{lê \cmd{/state}} (wd.south);
+\draw[->,>=Stealth,black!50] (tb.north) |- (-4.6,-1.2);
+\draw[chaos] (ch.west) -- node[lbl,above,text=vermelho]{injeta falhas} (rb.east);
+\end{tikzpicture}
+\caption[Topologia]{Rede interna \texttt{10.9.8.0/24} (números = final do IP). Linha cheia: caminho do usuário;
+tracejada: observação; pontilhada: falhas de rede. Publicados no host: Nginx, Prometheus e painel (os dois últimos
+só em 127.0.0.1).}
+\end{figure}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}l>{\raggedright}p{3.9cm}>{\ttfamily}l>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Contêiner} & \textbf{Imagem / linguagem} & \textbf{IP / porta} & \textbf{Função}\\ \midrule
+nginx & \texttt{nginx:1.27-alpine} & .10 :80 & entrada do usuário; balanceia e aplica timeouts\\
+rust-a & Rust + \textbf{actix-web} & .11 :8080 & nó de aplicação A\\
+rust-b & Rust + \textbf{axum} & .12 :8080 & nó de aplicação B (mesmo contrato que A)\\
+watchdog & Python (biblioteca padrão) & .20 :9100 & observador independente dos nós\\
+prometheus & \texttt{prom/prometheus} & .30 :9090 & coleta métricas e avalia alertas\\
+painel & Python + \textbf{FastAPI/uvicorn} & .50 :8085 & página dinâmica com o estado segundo o watchdog\\
+toolbox & \texttt{alpine} + ferramentas & .40 & operação \emph{dentro} da rede\\
+trafego & (imagem da toolbox) & .41 & usuários de fundo, 3 req/s (opcional)\\
+chaos & \texttt{alpine} + \texttt{tc} & sob demanda & injeta falhas de rede em outro contêiner\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+% ------------------------------------------------------------
+\subsection{O que roda em cada contêiner}\label{sec:conteineres}
+% ------------------------------------------------------------
+
+Leia esta seção com o \cmd{docker-compose.yml} aberto. Todos os contêineres ficam na rede \cmd{sentinel}
+(\cmd{10.9.8.0/24}), com IP fixo e nomes resolvidos pelo DNS interno do Docker (\cmd{rust-a}, \cmd{watchdog}\ldots).
+Todos registram logs em \cmd{stdout} (\cmd{docker compose logs <servico>}).
+
+\newenvironment{ficha}[1]{\par\medskip\noindent\textbf{#1}\par\nopagebreak
+  \begin{center}\small\begin{tabular}{@{}>{\bfseries\raggedright}p{2.5cm}>{\raggedright\arraybackslash}p{\dimexpr\linewidth-2.5cm-2\tabcolsep\relax}@{}}\toprule}
+  {\bottomrule\end{tabular}\end{center}\vspace{-6pt}}
+
+\begin{ficha}{nginx -- proxy reverso e balanceador}
+Imagem & \cmd{nginx:1.27-alpine} (oficial; sem \emph{build}). Processo: mestre + trabalhadores do Nginx, iniciado com \cmd{nginx -c /etc/nginx/sentinel/nginx.conf -g "daemon off;"}.\\ \midrule
+Rede & \cmd{10.9.8.10}. Porta 80 (publicada no host como \cmd{HOST_PORT}, padrão 8080) e 8081 (\cmd{stub_status}, só interna).\\ \midrule
+O que faz & Recebe o usuário, gera o \cmd{request_id} e escolhe o nó em \emph{round-robin} (\cmd{upstream rust_pool}: \cmd{rust-a:8080}, \cmd{rust-b:8080}). Timeouts de 1~s (conexão), 3~s (envio) e 3~s (leitura). Em erro de conexão, timeout, 502 ou 503 repete \textbf{uma} vez em outro nó. Após 3 falhas em 10~s (\cmd{max_fails}, \cmd{fail_timeout}) deixa o nó fora do grupo por 10~s. \textbf{Não sonda a saúde} dos nós nem conhece \emph{readiness}.\\ \midrule
+Rotas próprias & \cmd{/admin/} e \cmd{/metrics} devolvem 404 (não vazam o administrativo); \cmd{/nginx-health} devolve 200.\\ \midrule
+Registro & Uma linha por requisição: \cmd{request_id}, \cmd{node}, \cmd{upstream} (várias entradas = houve retry), \cmd{upstream_status}, \cmd{req_time}.\\ \midrule
+Arquivos e saúde & \cmd{nginx/nginx.conf}, montado \emph{somente leitura} como pasta: edite no host e aplique com \cmd{scripts/validar.sh --recarregar}. Healthcheck: \cmd{wget /nginx-health} a cada 5~s. Só inicia depois que A e B estão saudáveis.\\
+\end{ficha}
+
+\begin{ficha}{rust-a -- nó de aplicação A (Rust + actix-web)}
+Imagem & \cmd{sentinel-rust-a:local}, construída em duas etapas: compila em \cmd{rust:1.88-slim-bookworm} e executa em \cmd{debian:bookworm-slim}, com usuário sem privilégios (uid 10001). Código em \cmd{rust-a/src/main.rs}.\\ \midrule
+O que roda & O binário \cmd{sentinel-node-actix}: servidor HTTP \textbf{actix-web 4} com 2 \emph{workers} (cada um com seu laço de eventos) e \textbf{tokio} para temporizadores. O estado (contadores, prontidão, atraso artificial) é compartilhado por \cmd{Arc} e contadores atômicos; um \emph{middleware} (\cmd{middleware::from_fn}) anota o \cmd{request_id}, mede a duração, atualiza as métricas e escreve o log.\\ \midrule
+Rede e variáveis & \cmd{10.9.8.11}, porta 8080 (\emph{não} publicada). \cmd{NODE_NAME=rust-a}, \cmd{PORT=8080}, \cmd{WARMUP_SECONDS=3}, \cmd{INITIAL_DELAY_MS=0}.\\ \midrule
+Rotas & \cmd{/}: ``atendido por rust-a'' (sofre o atraso artificial). \cmd{/erro}: 500 de propósito. \cmd{/health/live}: 200 se o processo responde (nunca atrasa). \cmd{/health/ready}: 200 ou 503 (503 nos 3~s de aquecimento e com \cmd{ready=0}; sofre o atraso). \cmd{/metrics}: texto Prometheus escrito à mão. \cmd{/admin/ready}, \cmd{/admin/atraso}, \cmd{/admin/status}: controle, só pela rede interna.\\ \midrule
+Saúde e logs & O próprio binário, com \cmd{--healthcheck}, faz \cmd{GET /health/live} em \cmd{127.0.0.1} (a imagem não tem \cmd{curl}); \cmd{docker compose ps} mostra \emph{healthy}. Cada requisição gera \cmd{request_id=... client=... path=... status=... dur_ms=...}. Resposta a \cmd{SIGTERM}: encerra e registra \cmd{event=shutdown}.\\
+\end{ficha}
+
+\begin{ficha}{rust-b -- nó de aplicação B (Rust + axum)}
+Imagem & \cmd{sentinel-rust-b:local}, mesma receita em duas etapas. Código em \cmd{rust-b/src/main.rs}; binário \cmd{sentinel-node-axum}; usuário uid 10001.\\ \midrule
+O que roda & Servidor HTTP \textbf{axum 0.7} (sobre \cmd{hyper}) em um único \emph{runtime} \textbf{tokio} multi-thread, com as requisições tratadas como tarefas leves. Mesmo estado e mesmo \emph{middleware} (\cmd{middleware::from_fn_with_state}) que o A, em outra biblioteca.\\ \midrule
+Rede e variáveis & \cmd{10.9.8.12}, porta 8080 (não publicada). \cmd{NODE_NAME=rust-b}, demais variáveis iguais às de A.\\ \midrule
+Contrato & Rotas, códigos, cabeçalhos (\cmd{X-Node}, \cmd{X-Request-Id}), formato dos logs e das métricas são \textbf{idênticos} aos de A. A única diferença visível é o rótulo \cmd{framework="axum"} em \cmd{sentinel_info}. Por quê? Para que o cluster seja \emph{heterogêneo} (duas implementações do mesmo serviço) sem que o Nginx, o watchdog ou o Prometheus precisem saber qual é qual.\\
+\end{ficha}
+
+\begin{ficha}{watchdog -- observador independente}
+Imagem & \cmd{python:3.12-alpine}, usuário sem privilégios. \cmd{watchdog/watchdog.py}, \textbf{somente biblioteca padrão} (sem \cmd{pip}).\\ \midrule
+O que roda & Uma \emph{thread} por alvo e um servidor HTTP em \cmd{:9100}. Sonda \cmd{GET /health/ready} de \cmd{rust-a} e \cmd{rust-b} a cada 5~s (timeout 2~s). Marca \textbf{DOWN} após 3 falhas consecutivas e \textbf{UP} após 2 sucessos. Classifica o motivo da falha (\cmd{timeout}, \cmd{refused}, \cmd{no_route}, \cmd{http_503}, \cmd{late}\ldots).\\ \midrule
+Saídas & \cmd{/metrics} (Prometheus), \cmd{/state} (JSON com o estado de cada alvo), \cmd{/health}; logs com \cmd{state_change}. Rede \cmd{10.9.8.20}, não publicada.\\ \midrule
+Limite & \textbf{Não reinicia nada}: apenas observa. Enxerga os nós \emph{a partir de um ponto da rede}: se esse caminho falha, ele conclui ``DOWN'' mesmo com o nó vivo.\\
+\end{ficha}
+
+\begin{ficha}{prometheus -- métricas e alertas}
+Imagem & \cmd{prom/prometheus:v2.53.0} (oficial, versão fixada).\\ \midrule
+O que roda & Coleta a cada 5~s três \emph{jobs}: \cmd{rust} (\cmd{rust-a:8080}, \cmd{rust-b:8080}), \cmd{watchdog} (\cmd{watchdog:9100}) e a si mesmo. Avalia \cmd{prometheus/alerts.yml} a cada 5~s (a equipe completa as regras). Retenção de 2~h, \textbf{sem volume}: os dados somem com \cmd{docker compose down}.\\ \midrule
+Rede e acesso & \cmd{10.9.8.30}; interface web em \cmd{http://localhost:9090} (publicada só em \cmd{127.0.0.1}). \cmd{--web.enable-lifecycle} permite recarregar regras (\cmd{scripts/validar.sh --recarregar}). Healthcheck em \cmd{/-/healthy}.\\
+\end{ficha}
+
+\begin{ficha}{painel -- página dinâmica (FastAPI + uvicorn)}
+Imagem & \cmd{sentinel-painel:local}, \cmd{python:3.12-slim-bookworm} com \cmd{fastapi} e \cmd{uvicorn} fixados em \cmd{painel/requirements.txt}. Código em \cmd{painel/app.py} (servidor) e \cmd{painel/pagina.html} (página).\\ \midrule
+O que roda & \textbf{uvicorn} serve o app \textbf{FastAPI} em \cmd{:8085}. Uma \emph{thread} lê \cmd{watchdog:9100/state} a cada 2~s, guarda 150 amostras (5~min) e calcula o nível de cada nó (\textbf{ok}, \textbf{atenção}, \textbf{down}, \textbf{desconhecido}) e a lista de alertas. A página (HTML, CSS e SVG embutidos, sem biblioteca externa, funciona sem internet) redesenha a cada 2~s.\\ \midrule
+O que mostra & Arquitetura com cada componente colorido pelo estado; cartões por nó (falhas seguidas, motivo, idade da sondagem); gráfico da latência das sondagens com os pontos que falharam; faixa de estado no tempo; eventos; e o aviso \emph{``o watchdog não responde ao painel''} quando é o monitor que falha.\\ \midrule
+Rotas e acesso & \cmd{/} (página), \cmd{/api/estado} (JSON), \cmd{/health}. \cmd{10.9.8.50}, publicado em \cmd{http://localhost:8085} (só \cmd{127.0.0.1}). \textbf{Somente leitura}: não altera nada. Não sonda os nós Rust: mostra o que o \emph{watchdog} diz, então herda os erros dele.\\
+\end{ficha}
+
+\begin{ficha}{toolbox, trafego e chaos -- operação, usuários de fundo e falhas}
+toolbox & \cmd{alpine:3.20} com \cmd{bash}, \cmd{curl}, \cmd{jq}, \cmd{dig}, \cmd{ip}, \cmd{tcpdump}. Fica parado (\cmd{sleep infinity}); \cmd{10.9.8.40}, sem porta. Monta \cmd{toolbox/scripts} em \cmd{/opt/sentinel} e \cmd{evidencias/}. É o ``outro ponto da rede'': de lá você chama \cmd{/admin} e \cmd{/metrics} e testa um nó por um \emph{terceiro caminho}.\\ \midrule
+trafego & Mesma imagem, perfil \cmd{trafego}: executa \cmd{traffic.sh}, \textbf{3 req/s} em \cmd{http://nginx/} (máximo 20 em voo), \cmd{10.9.8.41}. Liga e desliga com \cmd{scripts/requests.sh fundo start|stop}.\\ \midrule
+chaos & \cmd{alpine:3.20} com \cmd{iproute2} e \cmd{tcpdump}, perfil \cmd{tools}: \textbf{não sobe com \cmd{up}}. O \cmd{scripts/chaos.sh} roda \cmd{docker run --cap-add NET_ADMIN --network container:<alvo>}, entrando na rede do contêiner escolhido, e o \cmd{netem.sh} configura o \cmd{tc}: disciplina \cmd{prio} com 16 faixas, filtros \cmd{u32} por destino e \cmd{netem} (atraso, \emph{jitter}, perda) \textbf{na saída}. O efeito some ao recriar o contêiner ou com \cmd{chaos.sh limpar}.\\
+\end{ficha}
+
+\textbf{Quem fala com quem.} Usuário $\rightarrow$ Nginx $\rightarrow$ A ou B. Watchdog $\rightarrow$ A e B (\cmd{/health/ready}).
+Prometheus $\rightarrow$ A, B e watchdog (\cmd{/metrics}). Painel $\rightarrow$ watchdog (\cmd{/state}), Nginx e
+Prometheus (apenas para saber se respondem). Toolbox $\rightarrow$ qualquer um. Chaos $\rightarrow$ a rede de
+um contêiner escolhido.
+
+% ------------------------------------------------------------
+\subsection{Scripts (em \texttt{scripts/})}
+% ------------------------------------------------------------
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\ttfamily\small}p{5.4cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Script} & \textbf{Para quê}\\ \midrule
+setup.sh {[}--limpo\textbar{}--verificar{]} & confere pré-requisitos, constrói, sobe e testa tudo (inclui o painel)\\
+clean.sh [--tudo] & derruba a topologia (só deste projeto)\\
+remover-tudo.sh [--simular\textbar{}--evidencias\textbar{}--tudo] & desliga \textbf{e remove} contêineres, rede, volumes e imagens; as opções apagam também dados, cache e imagens-base\\
+status.sh [--vivo\textbar{}--usuario] & retrato do estado; painel ao vivo no terminal; o que o \emph{usuário} viu (nós, retries, p95)\\
+requests.sh [N] \,\textbar{}\, fundo start\textbar{}stop & N requisições com nó, status, tempo e \cmd{request_id}; tráfego de fundo\\
+admin.sh ready\textbar{}atraso\textbar{}status\textbar{}pool & controla os nós (prontidão, latência) e retira/devolve um nó do Nginx\\
+chaos.sh atraso, perda, particao, limpar, status, captura & \textbf{falhas de rede} com \cmd{tc netem}\\
+evidence.sh [rótulo] & preserva logs e métricas \emph{antes} de reiniciar algo\\
+experimento.sh <1-4> & experimento guiado: prever, antes, durante, recuperação, depois\\
+validar.sh [--recarregar] & valida Compose, Nginx, Prometheus e scripts; com a opção, recarrega sem reiniciar\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+Na toolbox (\cmd{docker compose exec toolbox bash}): \cmd{admin.sh}, \cmd{promq.sh '<PromQL>'}, \cmd{sli.sh},
+\cmd{snapshot.sh}, \cmd{traffic.sh} em \cmd{/opt/sentinel/}. Linhas com \texttt{\$} rodam no \emph{host}, na raiz do
+projeto; o que precisa da rede interna usa \cmd{docker compose exec -T toolbox ...}.
+
+\subsection{Cronograma}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}lXlXlXlX@{}}
+1 & Briefing e desenho (A) & 3 & Rust e health checks (B) & 5 & Watchdog, painel e alertas (D) & 7 & Incidente (F, rascunho)\\
+2 & Topologia (B) & 4 & Nginx (C) & 6 & Experimentos (E) & 8 & Análise e demo (F, G, H)\\
+\end{tabularx}
+\end{center}
+
+Preliminar em \textbf{05/11} (5~min + 2, até 5 slides); pacote final e demonstração ao vivo em \textbf{12/11/2026} (10 min).

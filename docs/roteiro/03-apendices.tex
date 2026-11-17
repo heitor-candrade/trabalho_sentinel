@@ -1,0 +1,83 @@
+\appendix
+\section{Catálogo de falhas e onde aparecem}\label{ap:falhas}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright}p{2.6cm}>{\raggedright}p{4.8cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Falha} & \textbf{Como provocar} & \textbf{Onde aparece}\\ \midrule
+Nó parado & \cmd{docker compose stop rust-a} & Nginx: \cmd{upstream} com duas tentativas; watchdog: \cmd{reason=timeout} ou \cmd{no_route}, depois \cmd{state_change ... to=down}\\ \midrule
+Vivo, não pronto & \cmd{scripts/admin.sh ready rust-a 0} & \cmd{ready} 503, \cmd{live} 200; watchdog DOWN; \textbf{o Nginx continua enviando tráfego}\\ \midrule
+Latência de aplicação & \cmd{scripts/admin.sh atraso rust-a 2500} & \cmd{req_time} sobe; watchdog \cmd{reason=timeout}\\ \midrule
+Erro 5xx & \cmd{curl localhost:8080/erro} & \cmd{status=500}; \cmd{sentinel_http_requests_total} com \cmd{code="500"}\\ \midrule
+Atraso ou perda de rede & \cmd{scripts/chaos.sh atraso rust-a 800}; \cmd{chaos.sh perda rust-a 30} & \cmd{req_time} maior sem mudar o tempo medido no Rust (o nó é rápido, a rede não); perda: ``degraus'' de retransmissão e retries para B\\ \midrule
+Nó isolado & \cmd{scripts/chaos.sh particao rust-a} & timeouts no Nginx e no watchdog; \cmd{docker compose ps} segue \emph{healthy}; A não registra requisições novas\\ \midrule
+Monitor parado & \cmd{docker compose stop watchdog} & \cmd{up{job="watchdog"}} = 0; a série some; só alerta se a expressão previr isso\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Métricas principais}\label{ap:metricas}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright}p{6cm}>{\raggedright}p{1.7cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Métrica (rótulos)} & \textbf{Tipo} & \textbf{Significado}\\ \midrule
+\cmd{sentinel_http_requests_total} (\cmd{node,route,code}) & contador & requisições por rota e código\\
+\cmd{sentinel_app_request_duration_seconds} (\cmd{node,le}) & histograma & latência do usuário (\cmd{/}, \cmd{/erro}) medida \emph{no nó}\\
+\cmd{sentinel_ready}, \cmd{sentinel_inflight_requests} & medidor & prontidão; requisições em andamento (saturação)\\
+\cmd{sentinel_uptime_seconds} & medidor & tempo desde o início do processo (detecta reinício)\\
+\cmd{watchdog_target_down} (\cmd{target}) & medidor & visão do watchdog: 1 = DOWN\\
+\cmd{watchdog_consecutive_failures} & medidor & falhas consecutivas atuais\\
+\cmd{watchdog_last_probe_timestamp_seconds} & medidor & instante da última sondagem; idade = \cmd{time() - ...}\\
+\cmd{watchdog_probe_failures_total} (\cmd{target,reason}) & contador & falhas por motivo (\cmd{timeout}, \cmd{http_503}, \cmd{no_route}, \cmd{refused}\ldots)\\
+\cmd{watchdog_state_changes_total} (\cmd{target,to}) & contador & transições UP/DOWN (detecta \emph{flapping})\\
+\cmd{up} (\cmd{job,instance}) & medidor & do Prometheus: 1 se a coleta funcionou\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\section{PromQL mínimo}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright}p{8.2cm}X@{}}
+\toprule
+\textbf{Consulta} & \textbf{O que responde}\\ \midrule
+\cmd{watchdog_target_down == 1} & quais nós o watchdog considera DOWN\\
+\cmd{rate(sentinel_http_requests_total{route="root"}[1m])} & requisições por segundo por nó e código\\
+\cmd{histogram_quantile(0.95, sum by (le,node) (rate(sentinel_app_request_duration_seconds_bucket[1m])))} & p95 da latência por nó\\
+\cmd{time() - watchdog_last_probe_timestamp_seconds} & idade (s) da última sondagem\\
+\cmd{absent(up{job="watchdog"})} & retorna 1 \emph{se a série não existe}: útil quando a ausência é o problema\\ \bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Referência rápida}
+
+\begin{terminal}
+$ scripts/setup.sh [--limpo]        $ scripts/clean.sh [--tudo]       $ docker compose ps | logs -f <svc>
+$ curl -i http://localhost:8080/    $ scripts/requests.sh 20          $ scripts/requests.sh fundo start|stop
+$ scripts/status.sh [--vivo|--usuario --desde 5m]                     $ scripts/evidence.sh <rotulo> [--rede]
+$ scripts/admin.sh ready rust-a 0|1 | atraso rust-a 2500 | pool drenar|restaurar rust-a
+$ scripts/chaos.sh atraso rust-a 800 | perda rust-a 30 | particao rust-a | status | limpar todos
+$ scripts/experimento.sh <1-4>      $ scripts/validar.sh [--recarregar]
+$ docker compose exec -T toolbox /opt/sentinel/promq.sh 'watchdog_target_down'
+\end{terminal}
+
+\section{Problemas comuns}
+
+\begin{center}
+\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright}p{5cm}>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Sintoma} & \textbf{Causa provável e solução}\\ \midrule
+\cmd{port is already allocated} & porta 8080/9090/8085 ocupada: mude \cmd{HOST_PORT} ou \cmd{PAINEL_PORT} no \cmd{.env}\\ \midrule
+Painel em branco ou ``sem dados'' & \cmd{docker compose logs painel}; o painel depende do watchdog (\cmd{http://localhost:9100} só na rede interna); \cmd{docker compose restart painel}\\ \midrule
+Quero recomeçar do zero & \cmd{scripts/remover-tudo.sh --simular} (mostra o que seria removido), depois sem \cmd{--simular}\\ \midrule
+\cmd{Pool overlaps with other one} & sub-rede em conflito: mude \cmd{NET_PREFIX} no \cmd{.env} e \cmd{scripts/setup.sh --limpo}\\ \midrule
+\cmd{permission denied ... docker.sock} & usuário fora do grupo \cmd{docker}: \cmd{sudo usermod -aG docker $USER} e novo login\\ \midrule
+\cmd{chaos.sh}: ``modulo ausente'' & \cmd{sudo apt install linux-modules-extra-$(uname -r)}; \cmd{sudo modprobe sch_netem sch_prio cls_u32}\\ \midrule
+Nginx ou alerta não mudou após editar & \cmd{scripts/validar.sh --recarregar}; \cmd{docker compose logs nginx}; confira \cmd{http://localhost:9090/rules}\\ \midrule
+Experimento ``sujo'' (falha anterior ativa) & \cmd{scripts/chaos.sh limpar todos}; \cmd{scripts/admin.sh atraso rust-a 0}; \cmd{scripts/admin.sh ready rust-a 1}\\ \midrule
+Tudo estranho & \cmd{scripts/evidence.sh antes-de-resetar} e depois \cmd{scripts/setup.sh --limpo}\\ \bottomrule
+\end{tabularx}
+\end{center}

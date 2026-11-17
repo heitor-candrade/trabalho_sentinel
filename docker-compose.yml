@@ -1,0 +1,146 @@
+# Operacao Sentinel - topologia do laboratorio (FEELT37802 - Sistemas Distribuidos)
+#
+#   cliente (curl) --> nginx:80 (host: ${HOST_PORT:-8080}) --> rust-a:8080 (actix-web) | rust-b:8080 (axum)
+#   watchdog       --> sonda /health/ready de rust-a e rust-b a cada 5 s
+#   prometheus     --> coleta /metrics de rust-a, rust-b e watchdog (somente 127.0.0.1:9090)
+#   painel         --> pagina dinamica (FastAPI + uvicorn) com o estado segundo o watchdog (127.0.0.1:8085)
+#   toolbox        --> contêiner de operacao dentro da rede (curl, jq, dig, tcpdump)
+#
+# Portas publicadas no host: Nginx (HOST_PORT), Prometheus (127.0.0.1:9090) e painel (127.0.0.1:8085).
+# IPs fixos: o Nginx resolve os nomes dos nos uma vez, ao iniciar; com IP fixo,
+# reiniciar um no nao deixa o Nginx apontando para um endereco antigo.
+name: sentinel
+
+x-logging: &logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    command: ["nginx", "-c", "/etc/nginx/sentinel/nginx.conf", "-g", "daemon off;"]
+    ports: ["${HOST_PORT:-8080}:80"]            # unica porta de usuario publicada
+    volumes: ["./nginx:/etc/nginx/sentinel:ro"]  # diretorio (e nao arquivo): permite editar e recarregar
+    depends_on:
+      rust-a: { condition: service_healthy }
+      rust-b: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/nginx-health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 2s
+    logging: *logging
+    networks:
+      sentinel: { ipv4_address: "${NET_PREFIX:-10.9.8}.10" }
+
+  rust-a:                       # actix-web
+    build: ./rust-a
+    image: sentinel-rust-a:local
+    environment: { NODE_NAME: rust-a, PORT: "8080", WARMUP_SECONDS: "3" }
+    logging: *logging
+    networks:
+      sentinel: { ipv4_address: "${NET_PREFIX:-10.9.8}.11" }
+
+  rust-b:                       # axum
+    build: ./rust-b
+    image: sentinel-rust-b:local
+    environment: { NODE_NAME: rust-b, PORT: "8080", WARMUP_SECONDS: "3" }
+    logging: *logging
+    networks:
+      sentinel: { ipv4_address: "${NET_PREFIX:-10.9.8}.12" }
+
+  watchdog:
+    build: ./watchdog
+    image: sentinel-watchdog:local
+    environment:
+      ALVOS: "rust-a=http://rust-a:8080,rust-b=http://rust-b:8080"
+      INTERVALO: "5"        # segundos entre sondagens
+      TIMEOUT: "2"          # segundos por sondagem
+      LIMITE_FALHAS: "3"    # falhas consecutivas para marcar DOWN
+      LIMITE_SUCESSOS: "2"  # sucessos consecutivos para voltar a UP
+    depends_on:
+      rust-a: { condition: service_healthy }
+      rust-b: { condition: service_healthy }
+    logging: *logging
+    networks:
+      sentinel: { ipv4_address: "${NET_PREFIX:-10.9.8}.20" }
+
+  prometheus:
+    image: prom/prometheus:v2.53.0
+    command:
+      - --config.file=/etc/prometheus/sentinel/prometheus.yml
+      - --storage.tsdb.retention.time=2h
+      - --web.enable-lifecycle          # permite recarregar regras (somente acessivel em 127.0.0.1)
+    volumes: ["./prometheus:/etc/prometheus/sentinel:ro"]
+    ports: ["127.0.0.1:9090:9090"]      # somente local
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:9090/-/healthy"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+    logging: *logging
+    networks:
+      sentinel: { ipv4_address: "${NET_PREFIX:-10.9.8}.30" }
+
+  # Painel: pagina dinamica somente leitura. Le o /state do watchdog (nao sonda os nos Rust).
+  painel:
+    build: ./painel
+    image: sentinel-painel:local
+    environment:
+      WATCHDOG_URL: "http://watchdog:9100"
+      NGINX_URL: "http://nginx/nginx-health"
+      PROMETHEUS_URL: "http://prometheus:9090/-/healthy"
+      NET_PREFIX: "${NET_PREFIX:-10.9.8}"
+      FRAMEWORKS: "rust-a=actix-web,rust-b=axum"
+    ports: ["127.0.0.1:${PAINEL_PORT:-8085}:8085"]   # somente local
+    depends_on: [watchdog]
+    logging: *logging
+    networks:
+      sentinel: { ipv4_address: "${NET_PREFIX:-10.9.8}.50" }
+
+  # Contêiner de operacao: tudo que precisa "enxergar de dentro da rede" parte daqui
+  # (os endpoints /admin e /metrics nao sao publicados no host).
+  toolbox:
+    build: ./toolbox
+    image: sentinel-toolbox:local
+    command: ["sleep", "infinity"]
+    init: true
+    volumes:
+      - ./toolbox/scripts:/opt/sentinel:ro
+      - ./evidencias:/evidencias
+    environment: { NET_PREFIX: "${NET_PREFIX:-10.9.8}" }
+    logging: *logging
+    networks:
+      sentinel: { ipv4_address: "${NET_PREFIX:-10.9.8}.40" }
+
+  # Gerador de trafego de "usuarios" (opcional): scripts/requests.sh fundo start|stop
+  trafego:
+    build: ./toolbox
+    image: sentinel-toolbox:local
+    profiles: ["trafego"]
+    command: ["/opt/sentinel/traffic.sh"]
+    init: true
+    volumes: ["./toolbox/scripts:/opt/sentinel:ro"]
+    environment:
+      TARGET: "http://nginx/"
+      RATE: "${TRAFEGO_RATE:-3}"       # requisicoes por segundo (baixa, de proposito)
+      MAX_INFLIGHT: "20"
+    logging: *logging
+    networks:
+      sentinel: { ipv4_address: "${NET_PREFIX:-10.9.8}.41" }
+
+  # Injecao de falhas de rede (tc netem). NAO sobe com "up": e executado sob demanda
+  # por scripts/chaos.sh, que o anexa a rede do contêiner alvo (--network container:...).
+  chaos:
+    build: ./chaos
+    image: sentinel-chaos:local
+    profiles: ["tools"]
+    cap_add: ["NET_ADMIN"]
+
+networks:
+  sentinel:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: "${NET_PREFIX:-10.9.8}.0/24"

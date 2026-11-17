@@ -1,0 +1,27 @@
+# Operacao Sentinel - Prometheus
+# Coleta a cada 5 s (mesmo ritmo do watchdog). scrape_timeout < scrape_interval.
+global:
+  scrape_interval: 5s
+  scrape_timeout: 4s
+  evaluation_interval: 5s
+  external_labels:
+    lab: sentinel
+
+rule_files:
+  - /etc/prometheus/sentinel/alerts.yml
+
+scrape_configs:
+  # Nos da aplicacao Rust (as metricas ja trazem o rotulo node="rust-a|rust-b";
+  # o rotulo "instance" identifica o alvo coletado).
+  - job_name: rust
+    static_configs:
+      - targets: ["rust-a:8080", "rust-b:8080"]
+
+  # Watchdog: estado das sondagens (watchdog_target_down, falhas, idade da sondagem...)
+  - job_name: watchdog
+    static_configs:
+      - targets: ["watchdog:9100"]
+
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]

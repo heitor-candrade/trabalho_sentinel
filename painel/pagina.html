@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Operação Sentinel · Painel</title>
+<style>
+  :root {
+    --bg: #f6f7f9; --card: #ffffff; --ink: #1f2937; --mut: #6b7280; --line: #e5e7eb;
+    --ok: #16a34a; --okbg: #ecfdf3; --warn: #d97706; --warnbg: #fffbeb;
+    --bad: #dc2626; --badbg: #fef2f2; --unk: #9ca3af; --unkbg: #f3f4f6;
+    --acc: #2563eb; --acc2: #0d9488;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+    font: 15px/1.45 Inter, "Segoe UI", Roboto, -apple-system, system-ui, Helvetica, Arial, sans-serif; }
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 22px 20px 40px; }
+  header { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 18px; }
+  h1 { margin: 0; font-size: 24px; letter-spacing: -.01em; }
+  .sub { color: var(--mut); font-size: 13px; margin-top: 2px; }
+  .pill { display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border-radius: 999px;
+    font-weight: 600; font-size: 14px; border: 1px solid transparent; }
+  .pill i { width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
+  .pill.normal { color: var(--ok); background: var(--okbg); border-color: #bbf0cf; }
+  .pill.atencao { color: var(--warn); background: var(--warnbg); border-color: #f6dba5; }
+  .pill.incidente { color: var(--bad); background: var(--badbg); border-color: #f5bcbc; }
+  .pill.iniciando { color: var(--unk); background: var(--unkbg); border-color: var(--line); }
+  .atualizado { color: var(--mut); font-size: 12px; text-align: right; margin-top: 6px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px 18px;
+    box-shadow: 0 1px 2px rgba(16,24,40,.04); }
+  .card h2 { margin: 0 0 10px; font-size: 14px; font-weight: 600; color: var(--mut); text-transform: uppercase; letter-spacing: .05em; }
+  .alertas { display: grid; gap: 8px; margin-bottom: 18px; }
+  .alerta { border-radius: 10px; padding: 10px 14px; border-left: 5px solid; font-size: 14px; background: var(--card); border-top: 1px solid var(--line); border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+  .alerta.ok { border-left-color: var(--ok); background: var(--okbg); }
+  .alerta.atencao { border-left-color: var(--warn); background: var(--warnbg); }
+  .alerta.critico { border-left-color: var(--bad); background: var(--badbg); }
+  .alerta b { font-weight: 600; }
+  .grade { display: grid; grid-template-columns: 1.55fr 1fr; gap: 18px; margin-bottom: 18px; }
+  @media (max-width: 920px) { .grade { grid-template-columns: 1fr; } }
+  svg { display: block; width: 100%; height: auto; }
+  .no-svg rect.caixa { transition: fill .3s, stroke .3s; }
+  .pulso { animation: pulso 1.4s ease-in-out infinite; }
+  @keyframes pulso { 0%,100% { stroke-opacity: 1; } 50% { stroke-opacity: .35; } }
+  .nos { display: grid; gap: 12px; align-content: start; }
+  .no { border: 1px solid var(--line); border-radius: 12px; padding: 12px 14px; }
+  .no.ok { border-color: #bbf0cf; background: #fbfefc; } .no.atencao { border-color: #f6dba5; background: #fffdf7; }
+  .no.down { border-color: #f5bcbc; background: #fffafa; } .no.desconhecido { background: #fafafa; }
+  .no-topo { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 8px; }
+  .no-nome { font-weight: 600; } .badge { font-size: 11px; padding: 2px 8px; border-radius: 999px; background: var(--unkbg); color: var(--mut); margin-left: 6px; font-weight: 500; }
+  .est { font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 999px; }
+  .est.ok { color: var(--ok); background: var(--okbg); } .est.atencao { color: var(--warn); background: var(--warnbg); }
+  .est.down { color: var(--bad); background: var(--badbg); } .est.desconhecido { color: var(--unk); background: var(--unkbg); }
+  dl { display: grid; grid-template-columns: auto 1fr; gap: 3px 14px; margin: 0; font-size: 13px; }
+  dt { color: var(--mut); } dd { margin: 0; text-align: right; font-variant-numeric: tabular-nums; }
+  .falhas { display: inline-flex; gap: 4px; vertical-align: middle; margin-right: 6px; }
+  .falhas span { width: 14px; height: 8px; border-radius: 3px; background: #e5e7eb; }
+  .falhas span.on { background: var(--bad); } .falhas span.on.w { background: var(--warn); }
+  .legenda { display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: var(--mut); margin: 4px 0 6px; }
+  .legenda i { display: inline-block; width: 18px; height: 3px; border-radius: 2px; vertical-align: middle; margin-right: 6px; }
+  ul.ev { list-style: none; margin: 0; padding: 0; font-size: 13.5px; max-height: 230px; overflow: auto; }
+  ul.ev li { padding: 6px 0; border-bottom: 1px solid var(--line); display: flex; gap: 10px; }
+  ul.ev li:last-child { border-bottom: 0; } ul.ev time { color: var(--mut); font-variant-numeric: tabular-nums; flex: none; }
+  ul.ev .p { width: 9px; height: 9px; border-radius: 50%; margin-top: 6px; flex: none; }
+  .vazio { color: var(--mut); font-size: 13.5px; }
+  footer { color: var(--mut); font-size: 12px; margin-top: 18px; text-align: center; }
+  text { font-family: inherit; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <h1>Operação Sentinel · Painel</h1>
+      <div class="sub">FEELT37802 · Cluster Distribuído Resiliente · visão do <b>watchdog</b>, somente leitura</div>
+    </div>
+    <div>
+      <div id="pill" class="pill iniciando"><i></i><span id="pill-txt">Iniciando…</span></div>
+      <div class="atualizado" id="atualizado">aguardando dados…</div>
+    </div>
+  </header>
+
+  <div class="alertas" id="alertas"></div>
+
+  <div class="grade">
+    <div class="card">
+      <h2>Arquitetura</h2>
+      <svg id="arq" viewBox="0 0 760 450" role="img" aria-label="Arquitetura do laboratório com o estado de cada componente"></svg>
+    </div>
+    <div class="card">
+      <h2>Nós segundo o watchdog</h2>
+      <div class="nos" id="nos"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:18px">
+    <h2>Latência das sondagens do watchdog (ms)</h2>
+    <div class="legenda" id="legenda"></div>
+    <svg id="graf" viewBox="0 0 760 250" role="img" aria-label="Latência das sondagens ao longo do tempo"></svg>
+    <svg id="faixa" viewBox="0 0 760 56" role="img" aria-label="Linha do tempo de estado por nó"></svg>
+  </div>
+
+  <div class="card">
+    <h2>Eventos</h2>
+    <ul class="ev" id="eventos"></ul>
+  </div>
+
+  <footer>Dados lidos de <code>watchdog:9100/state</code> · atualiza a cada <span id="int">2</span> s · este painel não altera nada no sistema.</footer>
+</div>
+
+<script>
+const COR = { ok: '#16a34a', atencao: '#d97706', down: '#dc2626', desconhecido: '#9ca3af' };
+const BG  = { ok: '#ecfdf3', atencao: '#fffbeb', down: '#fef2f2', desconhecido: '#f3f4f6' };
+const ROT = { ok: 'UP', atencao: 'ATENÇÃO', down: 'DOWN', desconhecido: 'DESCONHECIDO' };
+const LINHA = ['#2563eb', '#0d9488', '#7c3aed', '#c2410c'];
+const POS = { cliente: [380, 34], nginx: [380, 122], 'rust-a': [190, 232], 'rust-b': [570, 232],
+              watchdog: [190, 342], prometheus: [570, 342], painel: [380, 414] };
+let ultimaLeitura = 0;
+
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const hora = t => new Date(typeof t === 'number' ? t * 1000 : t).toLocaleTimeString('pt-BR', { hour12: false });
+
+function nivelComp(id, d) {
+  if (d.nos && d.nos[id]) return d.nos[id].nivel;
+  if (id === 'watchdog') return d.monitor_ok ? 'ok' : 'down';
+  if (id === 'nginx') return d.nginx_ok ? 'ok' : 'down';
+  if (id === 'prometheus') return d.prometheus_ok ? 'ok' : 'atencao';
+  return 'ok';
+}
+
+function desenharArq(d) {
+  const comps = Object.fromEntries((d.componentes || []).map(c => [c.id, c]));
+  const W = 150, H = 58;
+  let s = '<defs><marker id="seta" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#9ca3af"/></marker></defs>';
+  const linha = (a, b, cor, extra = '', rot = '', dx = 0, dy = 0) => {
+    s += `<line x1="${a[0]}" y1="${a[1]}" x2="${b[0]}" y2="${b[1]}" stroke="${cor}" stroke-width="2.2" ${extra}/>`;
+    if (rot) s += `<text x="${(a[0] + b[0]) / 2 + dx}" y="${(a[1] + b[1]) / 2 + dy}" font-size="11" fill="#6b7280" text-anchor="middle">${rot}</text>`;
+  };
+  const P = POS;
+  // caminho do usuário (cheio)
+  linha([380, P.cliente[1] + 22], [380, P.nginx[1] - 31], '#93a3b8', 'marker-end="url(#seta)"');
+  linha([P.nginx[0] - 40, P.nginx[1] + 29], [P['rust-a'][0] + 25, P['rust-a'][1] - 31], '#93a3b8', 'marker-end="url(#seta)"', 'round-robin', -34, -4);
+  linha([P.nginx[0] + 40, P.nginx[1] + 29], [P['rust-b'][0] - 25, P['rust-b'][1] - 31], '#93a3b8', 'marker-end="url(#seta)"', 'round-robin', 34, -4);
+  // observação do watchdog (tracejado, cor = estado do nó)
+  const nv = id => nivelComp(id, d);
+  linha([P.watchdog[0], P.watchdog[1] - 29], [P['rust-a'][0], P['rust-a'][1] + 29], COR[nv('rust-a')], 'stroke-dasharray="7 5"', 'sonda /health/ready', 0, 0);
+  linha([P.watchdog[0] + 60, P.watchdog[1] - 29], [P['rust-b'][0] - 60, P['rust-b'][1] + 29], COR[nv('rust-b')], 'stroke-dasharray="7 5"', 'sonda /health/ready', 0, -6);
+  // coleta do Prometheus e leitura do painel (pontilhado)
+  linha([P.prometheus[0] - 75, P.prometheus[1]], [P.watchdog[0] + 75, P.watchdog[1]], '#b6bdc8', 'stroke-dasharray="2 5" stroke-linecap="round"', 'coleta /metrics', 0, -8);
+  linha([P.painel[0] - 60, P.painel[1] - 15], [P.watchdog[0] + 55, P.watchdog[1] + 29], '#b6bdc8', 'stroke-dasharray="2 5" stroke-linecap="round"', 'lê /state', -6, 14);
+
+  for (const [id, [x, y]] of Object.entries(P)) {
+    const c = comps[id] || { rotulo: id, detalhe: '' };
+    const n = nivelComp(id, d), no = (d.nos || {})[id];
+    const neutro = id === 'cliente' || id === 'painel';
+    const cor = neutro ? '#cbd2db' : COR[n], fundo = neutro ? '#f9fafb' : BG[n];
+    const w = neutro ? 132 : W, h = neutro ? 42 : H;
+    s += `<g><rect class="caixa ${n === 'down' && !neutro ? 'pulso' : ''}" x="${x - w / 2}" y="${y - h / 2}" width="${w}" height="${h}" rx="11" fill="${fundo}" stroke="${cor}" stroke-width="2"/>`;
+    if (!neutro) s += `<circle cx="${x - w / 2 + 14}" cy="${y - h / 2 + 15}" r="5" fill="${cor}"/>`;
+    const tx = neutro ? x : x + 6;
+    s += `<text x="${tx}" y="${y - (neutro ? 2 : 7)}" font-size="14" font-weight="600" fill="#1f2937" text-anchor="middle">${esc(c.rotulo)}</text>`;
+    s += `<text x="${tx}" y="${y + (neutro ? 13 : 9)}" font-size="10.5" fill="#6b7280" text-anchor="middle">${esc((c.ip ? '.' + c.ip.split('.').pop() + ' · ' : '') + c.detalhe)}</text>`;
+    if (no) { const lf = d.config.limite_falhas; s += `<text x="${tx}" y="${y + 23}" font-size="10.5" font-weight="600" fill="${cor}" text-anchor="middle">${esc(no.dur_ms + ' ms · ' + (no.falhas > lf ? no.falhas + ' falhas' : no.falhas + '/' + lf + ' falhas'))}</text>`; }
+    s += '</g>';
+  }
+  document.getElementById('arq').innerHTML = s;
+}
+
+function desenharNos(d) {
+  const el = document.getElementById('nos');
+  const lista = Object.entries(d.nos || {});
+  if (!lista.length) { el.innerHTML = '<div class="vazio">Sem dados do watchdog ainda.</div>'; return; }
+  const lim = (d.config || {}).limite_falhas || 3;
+  el.innerHTML = lista.map(([nome, n]) => {
+    const barras = Array.from({ length: lim }, (_, i) => `<span class="${i < n.falhas ? 'on' + (n.nivel === 'down' ? '' : ' w') : ''}"></span>`).join('');
+    return `<div class="no ${n.nivel}">
+      <div class="no-topo"><div><span class="no-nome">${esc(nome)}</span><span class="badge">${esc(n.framework)}</span></div>
+      <span class="est ${n.nivel}">${ROT[n.nivel]}</span></div>
+      <dl>
+        <dt>Última sondagem</dt><dd>${n.resultado === 'ok' ? 'ok' : 'falhou'} · ${n.dur_ms} ms</dd>
+        <dt>Falhas seguidas</dt><dd><span class="falhas">${barras}</span>${n.falhas > lim ? n.falhas + ' (limite ' + lim + ')' : n.falhas + '/' + lim}</dd>
+        <dt>Motivo</dt><dd>${esc(n.motivo || '—')}</dd>
+        <dt>Idade da sondagem</dt><dd>${n.idade_s == null ? '—' : n.idade_s + ' s'}</dd>
+        <dt>Sondagens ok / falhas</dt><dd>${n.ok} / ${n.fail}</dd>
+        <dt>Vezes que ficou DOWN</dt><dd>${n.downs}</dd>
+      </dl></div>`;
+  }).join('');
+}
+
+function desenharGrafico(d) {
+  const hist = d.historico || [], nomes = Object.keys(d.nos || {});
+  const g = document.getElementById('graf'), W = 760, H = 250, L = 50, R = 24, T = 16, B = 30;
+  const timeout = ((d.config || {}).timeout_s || 2) * 1000;
+  const agora = hist.length ? hist[hist.length - 1].t : Date.now() / 1000, janela = d.janela_s || 300, t0 = agora - janela;
+  let ymax = 50;
+  hist.forEach(h => nomes.forEach(n => { const v = h.nos[n]; if (v && v.ms != null) ymax = Math.max(ymax, v.ms * 1.25); }));
+  const passo = ymax <= 100 ? 25 : ymax <= 400 ? 100 : 500; ymax = Math.ceil(ymax / passo / 4) * passo * 4;
+  const X = t => L + (t - t0) / janela * (W - L - R), Y = v => T + (1 - v / ymax) * (H - T - B);
+  let s = '';
+  for (let i = 0; i <= 4; i++) {
+    const v = ymax * i / 4, y = Y(v);
+    s += `<line x1="${L}" x2="${W - R}" y1="${y}" y2="${y}" stroke="#eef0f3"/><text x="${L - 8}" y="${y + 4}" font-size="11" fill="#6b7280" text-anchor="end">${Math.round(v)}</text>`;
+  }
+  for (let i = 0; i <= 5; i++) {
+    const t = t0 + janela * i / 5; s += `<text x="${X(t)}" y="${H - 8}" font-size="11" fill="#6b7280" text-anchor="${i === 5 ? 'end' : 'middle'}">${hora(t)}</text>`;
+  }
+  if (timeout <= ymax) {
+    s += `<line x1="${L}" x2="${W - R}" y1="${Y(timeout)}" y2="${Y(timeout)}" stroke="#dc2626" stroke-dasharray="6 5" stroke-width="1.4"/>`;
+    s += `<text x="${W - R}" y="${Y(timeout) - 5}" font-size="11" fill="#dc2626" text-anchor="end">timeout do watchdog (${timeout} ms)</text>`;
+  } else {
+    s += `<text x="${W - R}" y="${T - 3}" font-size="11" fill="#dc2626" text-anchor="end">timeout do watchdog: ${timeout} ms (acima da escala)</text>`;
+  }
+  nomes.forEach((n, i) => {
+    const pts = hist.filter(h => h.nos[n] && h.nos[n].ms != null);
+    if (pts.length > 1) s += `<polyline fill="none" stroke="${LINHA[i % 4]}" stroke-width="2.2" stroke-linejoin="round" points="${pts.map(h => X(h.t).toFixed(1) + ',' + Y(h.nos[n].ms).toFixed(1)).join(' ')}"/>`;
+    pts.filter(h => h.nos[n].fail).forEach(h => { s += `<circle cx="${X(h.t)}" cy="${Y(h.nos[n].ms)}" r="3.6" fill="#dc2626" stroke="#fff" stroke-width="1"/>`; });
+  });
+  if (!hist.length) s += `<text x="${W / 2}" y="${H / 2}" font-size="13" fill="#6b7280" text-anchor="middle">aguardando dados…</text>`;
+  g.innerHTML = s;
+  document.getElementById('legenda').innerHTML = nomes.map((n, i) => `<span><i style="background:${LINHA[i % 4]}"></i>${esc(n)}</span>`).join('') +
+    '<span><i style="background:#dc2626;height:8px;width:8px;border-radius:50%"></i>sondagem que falhou</span>';
+
+  // faixa de estado (uma linha por nó)
+  const f = document.getElementById('faixa'); let sf = '';
+  const w = Math.max(2, (d.intervalo_painel_s || 2) / janela * (W - L - R) + 0.6);
+  nomes.forEach((n, i) => {
+    const y = 6 + i * 22; sf += `<text x="${L - 8}" y="${y + 11}" font-size="11" fill="#6b7280" text-anchor="end">${esc(n)}</text><rect x="${L}" y="${y}" width="${W - L - R}" height="14" rx="4" fill="#f3f4f6"/>`;
+    hist.forEach(h => { const v = h.nos[n]; if (v) sf += `<rect x="${X(h.t) - w}" y="${y}" width="${w}" height="14" fill="${COR[v.nivel]}"/>`; });
+  });
+  f.setAttribute('viewBox', `0 0 760 ${Math.max(34, 12 + nomes.length * 22)}`);
+  f.innerHTML = sf;
+}
+
+function desenharAlertas(d) {
+  const el = document.getElementById('alertas');
+  if (!d.alertas || !d.alertas.length) {
+    el.innerHTML = d.resumo === 'iniciando' ? '' : '<div class="alerta ok"><b>Tudo normal.</b> O watchdog considera todos os nós UP e responde ao painel.</div>';
+    return;
+  }
+  el.innerHTML = d.alertas.map(a => `<div class="alerta ${a.nivel}"><b>${a.nivel === 'critico' ? 'Crítico' : 'Atenção'}:</b> ${esc(a.texto)}</div>`).join('');
+}
+
+function desenharEventos(d) {
+  const el = document.getElementById('eventos');
+  if (!d.eventos || !d.eventos.length) { el.innerHTML = '<li class="vazio">Nenhuma mudança de estado desde que o painel iniciou.</li>'; return; }
+  const cor = { ok: COR.ok, atencao: COR.atencao, down: COR.down };
+  el.innerHTML = d.eventos.map(e => `<li><span class="p" style="background:${cor[e.nivel] || COR.desconhecido}"></span><time>${hora(e.t)}</time><span>${esc(e.texto)}</span></li>`).join('');
+}
+
+function desenhar(d) {
+  const pill = document.getElementById('pill');
+  pill.className = 'pill ' + (d.resumo || 'iniciando');
+  document.getElementById('pill-txt').textContent = { normal: 'Normal', atencao: 'Atenção', incidente: 'Incidente', iniciando: 'Iniciando…' }[d.resumo] || d.resumo;
+  document.getElementById('int').textContent = d.intervalo_painel_s || 2;
+  desenharAlertas(d); desenharArq(d); desenharNos(d); desenharGrafico(d); desenharEventos(d);
+}
+
+async function atualizar() {
+  try {
+    const r = await fetch('/api/estado', { cache: 'no-store' });
+    desenhar(await r.json()); ultimaLeitura = Date.now();
+  } catch (e) {
+    document.getElementById('pill').className = 'pill iniciando';
+    document.getElementById('pill-txt').textContent = 'Painel sem dados';
+  }
+}
+setInterval(() => {
+  if (ultimaLeitura) document.getElementById('atualizado').textContent = 'atualizado há ' + Math.round((Date.now() - ultimaLeitura) / 1000) + ' s';
+}, 1000);
+atualizar(); setInterval(atualizar, 2000);
+</script>
+</body>
+</html>

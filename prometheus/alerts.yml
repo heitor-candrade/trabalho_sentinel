@@ -1,0 +1,23 @@
+# Operacao Sentinel - regras de alerta (ARQUIVO CARREGADO PELO PROMETHEUS)
+#
+# Item D do enunciado: 5 metricas e 3 alertas, cada limiar com justificativa.
+# Aqui esta apenas o primeiro alerta, como exemplo de formato. A equipe deve:
+#   1. acrescentar os outros dois alertas (veja alerts.exemplo.yml para ideias);
+#   2. definir um alerta sobre o PROPRIO monitor (regra de ouro 3);
+#   3. validar:      scripts/validar.sh
+#   4. recarregar:   scripts/validar.sh --recarregar
+#
+# Todo alerta tem severidade, condicao acionavel, dono e procedimento de resposta
+# (regra de ouro 7). "for" evita alarme por uma unica amostra ruim.
+groups:
+  - name: sentinel
+    rules:
+      - alert: NoDown
+        expr: watchdog_target_down == 1
+        for: 15s                       # 3 falhas x 5 s: o watchdog ja esperou isso para marcar DOWN
+        labels:
+          severity: alta
+          dono: plantao
+        annotations:
+          summary: "Watchdog marcou {{ $labels.target }} como DOWN"
+          resposta: "Preserve evidencias (scripts/evidence.sh), teste a partir de outro ponto (nginx, toolbox) antes de reiniciar."

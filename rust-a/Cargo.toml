@@ -1,0 +1,14 @@
+[package]
+name = "sentinel-node-actix"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.88"
+description = "No A (actix-web) da Operacao Sentinel (FEELT37802 - Sistemas Distribuidos)"
+
+[dependencies]
+actix-web = { version = "4.9", default-features = false, features = ["macros"] }
+tokio = { version = "1", features = ["time"] }
+
+[profile.release]
+opt-level = 2
+strip = true

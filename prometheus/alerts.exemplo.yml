@@ -1,0 +1,26 @@
+# EXEMPLOS (NAO carregado pelo Prometheus). Copie, adapte e JUSTIFIQUE os limiares.
+# Cuidado: um alerta que usa uma expressao sem dados NUNCA dispara. Pergunte-se:
+# "o que acontece com esta expressao se a metrica sumir?" (ver absent(), up).
+groups:
+  - name: exemplos
+    rules:
+      # Taxa de erro 5xx no trafego de usuario (rotas / e /erro), medida nos nos Rust.
+      - alert: TaxaDeErroAlta
+        expr: |
+          sum(rate(sentinel_http_requests_total{route=~"root|erro",code=~"5.."}[2m]))
+            /
+          sum(rate(sentinel_http_requests_total{route=~"root|erro"}[2m])) > 0.02
+        for: 2m
+        labels: {severity: alta, dono: plantao}
+        annotations:
+          summary: "Mais de 2% das requisicoes de usuario terminaram em 5xx"
+
+      # Monitor parado: ultima sondagem do watchdog antiga.
+      # ATENCAO: se o Prometheus nao conseguir coletar o watchdog, a serie some
+      # e esta expressao deixa de retornar dados. Inclua tambem up/absent.
+      - alert: MonitorParado
+        expr: time() - max(watchdog_last_probe_timestamp_seconds) > 30
+        for: 10s
+        labels: {severity: media, dono: equipe}
+        annotations:
+          summary: "O watchdog nao conclui sondagens ha mais de 30 s"
