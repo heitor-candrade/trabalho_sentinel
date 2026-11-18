@@ -1,0 +1,40 @@
+ter. 17 nov 2026 14:57:24 UTC
+Antes (ready=1) /health/ready: 200
+ready_flag=false
+Com ready=0 -> /health/live: 200
+Com ready=0 -> /health/ready: 503
+--- Trafego pelo Nginx com rust-a ready=0 ---
+seq  status  no        tempo_s   request_id
+1    200     rust-a    0.000939  e6c3a3c334507d3d12b40e9f1db563ca
+2    200     rust-b    0.000811  a169ef917c3efc5a94f379183c44840d
+3    200     rust-a    0.000736  353af59c36b3900af682d804ece4ab87
+4    200     rust-b    0.000907  966c9b6421bb36bf04dfceb900efd3bc
+5    200     rust-a    0.000810  6a466dcabf40af56a64bdf717f93a5db
+6    200     rust-b    0.000907  7090eb525064da0f9b2a483f80948b17
+--- resumo (6 requisicoes para http://localhost:8080/)
+por no:     rust-a=3  rust-b=3  
+por status: 200=6  
+ready_flag=true
+--- Trafego pelo Nginx apos restaurar ready=1 ---
+seq  status  no        tempo_s   request_id
+1    200     rust-a    0.000755  3478f3bcd06c4b3b507f869abb1c9480
+2    200     rust-b    0.000874  5fbe777c22ef7a227b7bf60c69fc507b
+3    200     rust-a    0.000750  e472ca5db34ff0b2428bd506c6d09734
+4    200     rust-b    0.000790  83b583ac98d2342ffd64208fa6130f86
+5    200     rust-a    0.000792  a5251dfaab786de5e6afbff059327f33
+6    200     rust-b    0.000831  576b32e07013d65ec1827866c46d2a60
+7    200     rust-a    0.000765  bf02b01d747ef5be39e106a15918155b
+8    200     rust-b    0.000749  b7ca994927dd82eb427594d30c74fbe8
+9    200     rust-a    0.000819  6b6460b69ccb46d5494dd050f52a2944
+10   200     rust-b    0.000787  3a1b53dfa74334c0a800d2abefcf5d1c
+--- resumo (10 requisicoes para http://localhost:8080/)
+por no:     rust-a=5  rust-b=5  
+por status: 200=10  
+
+
+ter. 17 nov 2026 15:04:46 UTC
+delay_ms=1500
+Rota / : 200 (1.501458s)
+Rota /health/live : 200 (0.000560s)
+Rota /health/ready : 200 (1.502213s)
+delay_ms=0
