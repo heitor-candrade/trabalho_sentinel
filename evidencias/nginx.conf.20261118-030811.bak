@@ -1,0 +1,91 @@
+# Operacao Sentinel - Nginx (proxy reverso + balanceador)
+# Modelo comentado: cada diretiva tem o motivo de existir. Item C do enunciado:
+# a equipe deve explicar, com as proprias palavras, o fluxo de uma requisicao.
+#
+# Para recarregar sem derrubar conexoes:   scripts/validar.sh --recarregar
+# Para testar a sintaxe antes de recarregar: scripts/validar.sh
+
+worker_processes 1;          # laboratorio pequeno: 1 processo basta
+events { worker_connections 256; }
+
+http {
+    # ------------------------------------------------------------------
+    # Log: uma linha por requisicao, com request_id, no usado e tempos.
+    #  upstream_addr   -> IP:porta de cada tentativa (virgula = houve retry)
+    #  upstream_status -> status de cada tentativa (ex.: "504, 200")
+    #  node            -> nome do no que respondeu (cabecalho X-Node do Rust)
+    #  req_time        -> tempo total visto pelo cliente (s)
+    #  upstream_time   -> tempo de cada tentativa no upstream (s)
+    # ------------------------------------------------------------------
+    log_format sentinel '$time_iso8601 nginx INFO request_id=$request_id '
+                        'client=$remote_addr method=$request_method uri=$uri '
+                        'status=$status node=$upstream_http_x_node '
+                        'upstream=$upstream_addr upstream_status=$upstream_status '
+                        'req_time=$request_time upstream_time=$upstream_response_time';
+    access_log /dev/stdout sentinel;
+    error_log  /dev/stderr warn;
+
+    # ------------------------------------------------------------------
+    # Upstream: o grupo de nos. Round-robin por padrao (A, B, A, B...).
+    # max_fails / fail_timeout: apos 3 falhas dentro de 10 s, o no sai do
+    # grupo por 10 s ("falha passiva": o Nginx aprende com o trafego real,
+    # nao sonda o no sozinho).
+    # Para retirar um no de proposito (reversivel): scripts/admin.sh pool drenar rust-a
+    # ------------------------------------------------------------------
+    upstream rust_pool {
+        server rust-a:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-a
+        server rust-b:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-b
+    }
+
+    server {
+        listen 80;
+
+        location / {
+            proxy_pass http://rust_pool;
+
+            # request_id gerado pelo Nginx e repassado ao Rust: e a chave que
+            # permite correlacionar a mesma requisicao nos dois logs.
+            proxy_set_header X-Request-Id $request_id;
+            proxy_hide_header X-Request-Id;
+            add_header X-Request-Id $request_id always;
+
+            # Timeouts explicitos e curtos (regra de ouro 4).
+            proxy_connect_timeout 1s;   # estabelecer a conexao com o no
+            proxy_send_timeout    3s;   # enviar a requisicao ao no
+            proxy_read_timeout    3s;   # esperar a resposta do no
+
+            # Retry limitado: so para falhas de conexao/timeout/502/503.
+            # GET e idempotente, entao repetir e seguro. No maximo 2 tentativas
+            # (a original + 1 em outro no) e no maximo 4 s no total.
+            # Cuidado: retry amplifica carga no no restante.
+            proxy_next_upstream         error timeout http_502 http_503;
+            proxy_next_upstream_tries   2;
+            proxy_next_upstream_timeout 4s;
+        }
+
+        # Nao exponha /admin nem /metrics pelo Nginx (porta publicada no host).
+        location /admin/ { return 404; }
+        location /metrics { return 404; }
+
+        # Verificacao do proprio Nginx (usada pelo HEALTHCHECK do Compose).
+        location = /nginx-health {
+            access_log off;
+            default_type text/plain;
+            return 200 "ok\n";
+        }
+    }
+
+    # Porta 8081: apenas dentro da rede do projeto (NAO publicada no host).
+    # Uso: docker compose exec toolbox curl -s http://nginx:8081/stub_status
+    server {
+        listen 8081;
+        allow 10.0.0.0/8;
+        allow 172.16.0.0/12;
+        allow 192.168.0.0/16;
+        deny all;
+        location = /stub_status {
+            stub_status;
+            access_log off;
+        }
+    }
+}
