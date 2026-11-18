@@ -1,0 +1,65 @@
+qua. 18 nov 2026 02:56:28 UTC
+=== 20 requisicoes com rust-a ATIVO ===
+seq  status  no        tempo_s   request_id
+1    200     rust-a    0.000900  eb37ffed1b06f6d6a7740198ecd8d05f
+2    200     rust-b    0.000764  d75cd78a3f7dafb72e100e9293315550
+3    200     rust-a    0.000826  0e78684bc5b40581123ae4b61d99cc8e
+4    200     rust-b    0.000879  f42ebfcc210f2f052e1561ea15214573
+5    200     rust-a    0.000922  09bf423507e452e2170aa89ffa781440
+6    200     rust-b    0.000915  7b5daff0c3c549b7eeecf565fd298106
+7    200     rust-a    0.000971  04a5ab27ffa9e4123f4b37d506594429
+8    200     rust-b    0.000947  564798608b19b35ca2070d7ba31de0f8
+9    200     rust-a    0.000921  0e35d73ee2526715c8c9b825d5823868
+10   200     rust-b    0.000905  b4ad36186744ddea7b7b85ce56d13af4
+11   200     rust-a    0.000957  64d8b79e06804f2c1ed3923875904549
+12   200     rust-b    0.000906  76b7e5000c760886ab3b145cd2876ff8
+13   200     rust-a    0.000938  0a96783753ce75757842a89cddb5d22f
+14   200     rust-b    0.001135  90a0bc637311062bdf02e5bd1ac08eed
+15   200     rust-a    0.000748  cdfb2282c4bf6f92c7d6a8e0e05e48c6
+16   200     rust-b    0.001333  362ca9e8f972aa48e4855b4612317ca8
+17   200     rust-a    0.000722  1ee250d983ca1b50624e129643ac6b04
+18   200     rust-b    0.001096  22b34ed4e9aaf862a0f1fa49c3402163
+19   200     rust-a    0.000775  2a42318016f1952da1922d45d60c9663
+20   200     rust-b    0.000797  708b113f0731b3d64652413d09935fcf
+--- resumo (20 requisicoes para http://localhost:8080/)
+por no:     rust-a=10  rust-b=10  
+por status: 200=20  
+janela: ultimos 2m | fonte: nginx | requisicoes: 20
+  por no:       rust-a 10 (50%)   rust-b 10 (50%)   
+  por status:   200=20  
+  com retry:    0 (0.0%)   disponibilidade: 100.0%
+  latencia (s): media 0.000  p50 0.000  p95 0.001  max 0.001
+=== Parando rust-a e enviando 20 requisicoes ===
+seq  status  no        tempo_s   request_id
+1    200     rust-b    1.003804  e6e6fa15003829bca541c656eefb0e2f
+2    200     rust-b    0.001890  d634d80b7dfbd8cfd0a41dd548bc40f0
+3    200     rust-b    1.003706  b6ee9515b149de609de4f92189c2bd5b
+4    200     rust-b    0.001235  469a423386bed6cfbaaca94331d75eb3
+5    200     rust-b    1.001374  a9f0f5255152f8e9c69c151b49f61aa5
+6    200     rust-b    0.001091  6ec433ec7309b8089f370ac10c0bdd7c
+7    200     rust-b    0.001132  2267edba030ea42109486aff0721bde9
+8    200     rust-b    0.001109  fea37a2ed06d77ad34f08f89762361e6
+9    200     rust-b    0.001242  62cc6f118238516b61c2b7c68613a99e
+10   200     rust-b    0.000918  a222d1572b379f20d8ebff696517de6f
+11   200     rust-b    0.000772  0a9727ce7e4b542cfab1c8408548c711
+12   200     rust-b    0.000745  f488295b495f601a44eea01d53d3bea9
+13   200     rust-b    0.000804  03dc756d513381fd0b8263e368a3bcee
+14   200     rust-b    0.000792  6dc54a77e503be66336569057a70e4f8
+15   200     rust-b    0.000828  51cf27b79e037e93e9e4ca3da596576a
+16   200     rust-b    0.000860  a7c96832e043eb7d0116894f7cfd7a77
+17   200     rust-b    0.000799  d814b6c38d8a2942ce2c77a7fc12852f
+18   200     rust-b    0.000917  2ba0511317997e04281f0358554c51c5
+19   200     rust-b    0.000720  a6c1bda227c5ad488371e11caabdd60c
+20   200     rust-b    0.000694  6ca0235386c7ea829f70ca1c9f8ae5ff
+--- resumo (20 requisicoes para http://localhost:8080/)
+por no:     rust-b=20  
+por status: 200=20  
+janela: ultimos 2m | fonte: nginx | requisicoes: 40
+  por no:       rust-a 10 (25%)   rust-b 30 (75%)   
+  por status:   200=40  
+  com retry:    3 (7.5%)   disponibilidade: 100.0%
+  latencia (s): media 0.075  p50 0.000  p95 1.000  max 1.002
+=== Logs do Nginx com retries ===
+2026-11-18T02:56:33+00:00 nginx INFO request_id=e6e6fa15003829bca541c656eefb0e2f client=10.9.8.1 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.11:8080, 10.9.8.12:8080 upstream_status=504, 200 req_time=1.002 upstream_time=1.001, 0.001
+2026-11-18T02:56:34+00:00 nginx INFO request_id=b6ee9515b149de609de4f92189c2bd5b client=10.9.8.1 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.11:8080, 10.9.8.12:8080 upstream_status=504, 200 req_time=1.002 upstream_time=1.000, 0.002
+2026-11-18T02:56:35+00:00 nginx INFO request_id=a9f0f5255152f8e9c69c151b49f61aa5 client=10.9.8.1 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.11:8080, 10.9.8.12:8080 upstream_status=504, 200 req_time=1.000 upstream_time=1.001, 0.000

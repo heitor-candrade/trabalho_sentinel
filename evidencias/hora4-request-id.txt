@@ -1,0 +1,4 @@
+qua. 18 nov 2026 03:11:56 UTC
+Request ID capturado: 815195a0bb28a16697020dd3caa5ea2b
+2026-11-18T03:11:56+00:00 nginx INFO request_id=815195a0bb28a16697020dd3caa5ea2b client=10.9.8.1 method=GET uri=/ status=200 node=rust-a upstream=10.9.8.11:8080 upstream_status=200 req_time=0.001 upstream_time=0.000
+2026-11-18T03:11:56.112Z rust-a INFO request_id=815195a0bb28a16697020dd3caa5ea2b client=10.9.8.10 method=GET path=/ status=200 dur_ms=0
