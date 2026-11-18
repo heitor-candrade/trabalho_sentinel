@@ -9,15 +9,55 @@
 #
 # Todo alerta tem severidade, condicao acionavel, dono e procedimento de resposta
 # (regra de ouro 7). "for" evita alarme por uma unica amostra ruim.
+
 groups:
   - name: sentinel
     rules:
       - alert: NoDown
         expr: watchdog_target_down == 1
-        for: 15s                       # 3 falhas x 5 s: o watchdog ja esperou isso para marcar DOWN
+        for: 15s                       # 3 falhas x 5 s: evita alarme por perda isolada de pacote
         labels:
           severity: alta
           dono: plantao
         annotations:
           summary: "Watchdog marcou {{ $labels.target }} como DOWN"
           resposta: "Preserve evidencias (scripts/evidence.sh), teste a partir de outro ponto (nginx, toolbox) antes de reiniciar."
+
+      - alert: TaxaDeErroAlta
+        expr: |
+          sum(rate(sentinel_http_requests_total{route=~"root|erro",code=~"5.."}[2m]))
+            /
+          sum(rate(sentinel_http_requests_total{route=~"root|erro"}[2m])) > 0.02
+        for: 2m                        # > 2% de erros 5xx sustentados por 2 min viola o SLO de disponibilidade
+        labels:
+          severity: alta
+          dono: plantao
+        annotations:
+          summary: "Mais de 2% das requisicoes de usuario terminaram em 5xx"
+          resposta: "Verifique logs dos nos Rust, drene o no com falha (scripts/admin.sh pool drenar) e avalie rollback."
+
+      - alert: LatenciaAltaP95
+        expr: |
+          histogram_quantile(0.95, sum by (le, node) (rate(sentinel_app_request_duration_seconds_bucket[2m]))) > 1.0
+        for: 1m                        # p95 > 1,0 s viola o SLO de latencia (< 200 ms) e aproxima-se do timeout do watchdog (2 s)
+        labels:
+          severity: media
+          dono: equipe
+        annotations:
+          summary: "Latencia p95 acima de 1,0 s no no {{ $labels.node }}"
+          resposta: "Verifique saturacao (sentinel_inflight_requests), CPU do host e atrasos injetados (/admin/status)."
+
+      - alert: MonitorParado
+        expr: |
+          (up{job="watchdog"} == 0)
+            or
+          absent(watchdog_last_probe_timestamp_seconds)
+            or
+          ((time() - max(watchdog_last_probe_timestamp_seconds)) > 30)
+        for: 10s                       # 30 s equivale a 6 ciclos de sondagem de 5 s sem resposta ou queda do alvo no Prometheus
+        labels:
+          severity: media
+          dono: equipe
+        annotations:
+          summary: "O watchdog esta parado ou nao conclui sondagens ha mais de 30 s"
+          resposta: "Verifique o container sentinel-watchdog (docker compose ps/logs) e reinicie o servico se necessario."

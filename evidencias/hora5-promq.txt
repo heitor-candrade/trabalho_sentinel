@@ -1,0 +1,7 @@
+qua. 18 nov 2026 14:54:44 UTC
+__name__=up instance=rust-b:8080 job=rust => 1
+__name__=up instance=localhost:9090 job=prometheus => 1
+__name__=up instance=rust-a:8080 job=rust => 1
+__name__=up instance=watchdog:9100 job=watchdog => 1
+__name__=watchdog_target_down instance=watchdog:9100 job=watchdog target=rust-a => 0
+__name__=watchdog_target_down instance=watchdog:9100 job=watchdog target=rust-b => 0
