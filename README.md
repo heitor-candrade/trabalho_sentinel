@@ -113,3 +113,24 @@ Somente o Nginx (`HOST_PORT`), o Prometheus (`127.0.0.1:9090`) e o painel (`127.
 `/metrics` são bloqueados no Nginx e acessíveis apenas dentro da rede (toolbox). Imagens com
 versão fixada (`nginx:1.27-alpine`, `prom/prometheus:v2.53.0`, `rust:1.88`, `python:3.12-alpine`, `python:3.12-slim`,
 `alpine:3.20`). Não coloque senhas, tokens ou dados pessoais no repositório.
+
+## Entregas da equipe (onde está cada item)
+
+| Entrega | Arquivo(s) |
+|---|---|
+| A – diagrama e hipóteses | `docs/A-arquitetura.pdf`, `docs/A-hipoteses.md` |
+| C – Nginx comentado e fluxo | `docs/C-nginx-comentado.conf`, `docs/C-fluxo.md`, `evidencias/hora4-*` |
+| D – plano de monitoramento e alertas | `docs/D-plano-de-monitoramento.md`, `prometheus/alerts.yml`, `evidencias/hora5-*` |
+| E – matriz de experimentos (7 experimentos, 3 extras, 2 de rede) | `docs/E-matriz.md`, `evidencias/exp1_*` … `exp7_*` |
+| F – relatório de incidente | `docs/F-relatorio.pdf` (fonte `docs/F-relatorio.tex`), `evidencias/hora7-*` |
+| G – este README (testado do zero em 19/11/2026 num clone novo) | `README.md`, `.env.example` |
+| H – demonstração e slides | `docs/H-roteiro-demo.md`, `docs/H-slides-final.md`, prints em `docs/H-planoB/` |
+
+Para compilar o relatório: `cd docs && pdflatex F-relatorio.tex` (duas vezes; usa `docs/preambulo.tex`).
+
+### Notas de reprodução fora do Linux (macOS com Docker Desktop/OrbStack)
+
+* `tc netem` funcionou no kernel da VM (OrbStack 7.2); `scripts/setup.sh` confirma com "kernel com prio + netem + u32".
+* `scripts/inc.sh` usa `date -d` (GNU): no macOS, rode-o num Linux ou com GNU coreutils (`gdate`) no `PATH`.
+* `scripts/admin.sh pool drenar|restaurar` foi ajustado para um `sed` compatível com BSD e GNU (antes falhava em silêncio no macOS).
+* O arquivo `.env.example` que o `setup.sh` copia para `.env` está versionado.

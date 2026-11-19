@@ -1,0 +1,4 @@
+.env
+rust-a/target/
+rust-b/target/
+__pycache__/
