@@ -1,0 +1,17 @@
+2026-11-19T03:26:35Z  ANTES: estado normal? status.sh, chaos.sh status, evidence.sh linha-de-base --rede (trafego de fundo ja ligado a 3 req/s)
+[ ok ] evidencias salvas em evidencias/20261119-032645_linha-de-base
+2026-11-19T03:26:59Z  INICIO: scripts/inc.sh iniciar (segundo plano; eventos em hora7-eventos-inc.txt)
+2026-11-19T03:28:02Z  checagem salva em evidencias/hora7-01-checagem-1.txt
+2026-11-19T03:28:37Z  checagem salva em evidencias/hora7-02-checagem-2.txt
+2026-11-19T03:29:11Z  checagem salva em evidencias/hora7-03-checagem-3.txt
+2026-11-19T03:29:11Z  captura de pacotes na interface de B (10 s): scripts/chaos.sh captura rust-b 10
+2026-11-19T03:29:29Z  REGRA: antes de qualquer acao, scripts/evidence.sh antes-do-reinicio --rede
+[ ok ] evidencias salvas em evidencias/20261119-032929_antes-do-reinicio
+2026-11-19T03:29:44Z  DECISAO: retirar B do Nginx (reversivel): scripts/admin.sh pool drenar rust-b. Nao reiniciar nada.
+2026-11-19T03:30:17Z  checagem salva em evidencias/hora7-06-apos-drenagem.txt
+2026-11-19T03:30:17Z  inc.sh terminou (eventos em evidencias/hora7-eventos-inc.txt)
+2026-11-19T03:30:17Z  CAUSA ENCONTRADA NAS CHECAGENS: ready_flag=false em B (admin status) + regra de rede na saida de B para o Nginx (chaos.sh status). Correcao dirigida: admin.sh ready rust-b 1; chaos.sh limpar rust-b
+2026-11-19T03:30:27Z  watchdog voltou a UP para todos: devolver B ao pool: scripts/admin.sh pool restaurar rust-b
+2026-11-19T03:31:00Z  recuperacao confirmada (hora7-09). inc.sh resolver para fechar o exercicio
+[ ok ] incidente encerrado. Aguarde cerca de 20 s para o watchdog voltar a UP.
+2026-11-19T03:31:11Z  FIM do exercicio

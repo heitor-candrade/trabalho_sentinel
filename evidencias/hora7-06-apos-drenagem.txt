@@ -1,0 +1,111 @@
+### 2026-11-19T03:30:04Z  APOS A DRENAGEM (T+185 s): o usuario voltou a ver 200 rapido? B continua vivo para diagnostico?
+
+--- scripts/status.sh
+CONTEINERES
+SERVICE      STATE     <no value>   STATUS
+nginx        running   healthy      Up 26 minutes (healthy)
+painel       running   healthy      Up 26 minutes (healthy)
+prometheus   running   healthy      Up 26 minutes (healthy)
+rust-a       running   healthy      Up 23 minutes (healthy)
+rust-b       running   healthy      Up 26 minutes (healthy)
+toolbox      running                Up 26 minutes
+trafego      running                Up 24 minutes
+watchdog     running   healthy      Up 17 minutes (healthy)
+
+instante (UTC): 2026-11-19T03:30:05Z
+
+WATCHDOG  (estado | falhas consecutivas | idade da ultima sondagem | ultimo motivo)
+  rust-a   UP    falhas=0  idade=0.4   s ultimo=ok (2ms)
+  rust-b   DOWN  falhas=33 idade=0.5   s ultimo=http_503 (3ms)
+
+NOS RUST  (visao interna de cada no)
+  node=rust-a ready_flag=true effective_ready=true delay_ms=0 uptime_s=1430
+  node=rust-b ready_flag=false effective_ready=false delay_ms=0 uptime_s=1575
+
+PROMETHEUS  (coleta e alertas)
+  coleta rust/rust-a:8080: up
+  coleta rust/rust-b:8080: up
+  coleta watchdog/watchdog:9100: up
+  ALERTA FIRING NoDown rust-b  [alta]
+
+NGINX  (stub_status)
+  Active connections: 1 
+  server accepts handled requests
+   6087 6087 6087 
+  Reading: 0 Writing: 1 Waiting: 0 
+
+--- o que o usuario viu (Nginx, 60 s): scripts/status.sh --usuario --desde 60s
+janela: ultimos 60s | fonte: nginx | requisicoes: 178
+  por no:       rust-a 151 (85%)   rust-b 27 (15%)   
+  por status:   200=178  
+  com retry:    9 (5.1%)   disponibilidade: 100.0%
+  latencia (s): media 0.127  p50 0.001  p95 1.002  max 2.014
+
+--- A e B respondem a um TERCEIRO ponto (toolbox)? curl -m 2 /health/ready e /health/live
+  rust-a/health/ready -> 200 em 0.000867s
+  rust-a/health/live -> 200 em 0.000726s
+  rust-b/health/ready -> 503 em 0.000777s
+  rust-b/health/live -> 200 em 0.000594s
+
+--- o que o proprio no diz: admin.sh status
+node=rust-a ready_flag=true effective_ready=true delay_ms=0 uptime_s=1431
+node=rust-b ready_flag=false effective_ready=false delay_ms=0 uptime_s=1576
+
+--- idade da ultima sondagem do watchdog e alvos coletados (promq)
+instance=watchdog:9100 job=watchdog target=rust-a => 6.5249998569488525
+instance=watchdog:9100 job=watchdog target=rust-b => 6.632999897003174
+__name__=up instance=rust-a:8080 job=rust => 1
+__name__=up instance=watchdog:9100 job=watchdog => 1
+__name__=up instance=localhost:9090 job=prometheus => 1
+__name__=up instance=rust-b:8080 job=rust => 1
+
+--- ultimas linhas do watchdog (60 s)
+2026-11-19T03:29:40.124Z watchdog WARN target=rust-b result=fail reason=http_503 latency_ms=0 consecutive_failures=28 state=down
+2026-11-19T03:29:45.129Z watchdog WARN target=rust-b result=fail reason=http_503 latency_ms=0 consecutive_failures=29 state=down
+2026-11-19T03:29:50.129Z watchdog WARN target=rust-b result=fail reason=http_503 latency_ms=0 consecutive_failures=30 state=down
+2026-11-19T03:29:55.132Z watchdog WARN target=rust-b result=fail reason=http_503 latency_ms=2 consecutive_failures=31 state=down
+2026-11-19T03:30:00.133Z watchdog WARN target=rust-b result=fail reason=http_503 latency_ms=2 consecutive_failures=32 state=down
+2026-11-19T03:30:05.137Z watchdog WARN target=rust-b result=fail reason=http_503 latency_ms=3 consecutive_failures=33 state=down
+
+--- Nginx: ultimas 8 linhas encaminhadas a rust-b
+2026-11-19T03:29:49+00:00 nginx INFO request_id=c38b607fee756594c050c6611bada0f8 client=10.9.8.41 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.12:8080 upstream_status=200 req_time=0.304 upstream_time=0.305
+2026-11-19T03:29:50+00:00 nginx INFO request_id=a78c662099e75d25e8de3330aa8504e9 client=10.9.8.41 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.12:8080 upstream_status=200 req_time=0.304 upstream_time=0.304
+2026-11-19T03:29:50+00:00 nginx INFO request_id=e0b569209ba939fca81ab14739e35c3d client=10.9.8.41 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.12:8080 upstream_status=200 req_time=2.014 upstream_time=2.013
+2026-11-19T03:29:51+00:00 nginx INFO request_id=af23a4df76a8f3385d6921f8d8261dbb client=10.9.8.41 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.12:8080 upstream_status=200 req_time=0.306 upstream_time=0.306
+2026-11-19T03:29:51+00:00 nginx INFO request_id=757e1961900860546c28c63eb0b452ed client=10.9.8.41 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.12:8080 upstream_status=200 req_time=1.073 upstream_time=1.073
+2026-11-19T03:29:52+00:00 nginx INFO request_id=bb98f5335075885aaa97cb989be709cd client=10.9.8.41 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.12:8080 upstream_status=200 req_time=0.304 upstream_time=0.304
+2026-11-19T03:29:52+00:00 nginx INFO request_id=b2ee33cfe2bcfb563b01f4047b62f158 client=10.9.8.41 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.12:8080 upstream_status=200 req_time=0.301 upstream_time=0.302
+2026-11-19T03:30:06+00:00 nginx INFO request_id=1944f56e5e6c28d009408a63cc7ee937 client=10.9.8.41 method=GET uri=/ status=200 node=rust-b upstream=10.9.8.12:8080 upstream_status=200 req_time=0.305 upstream_time=0.304
+
+--- Nginx: linhas com retry (upstream com virgula) nos ultimos 60 s
+9
+
+--- regras de rede ativas: scripts/chaos.sh status todos
+== nginx
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== rust-a
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== rust-b
+   interface: eth0
+     [saida -> nginx      (10.9.8.10)]  delay 150ms loss 25% seed 992976255098042069
+     (tc qdisc show, bruto:)
+       qdisc prio 1: root refcnt 9 bands 16 priomap 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+       qdisc netem 20: parent 1:2 limit 1000 delay 150ms loss 25% seed 992976255098042069
+== watchdog
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== prometheus
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== toolbox
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== painel
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+
+--- pool do Nginx: scripts/admin.sh pool status
+  server rust-a:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-a
+  server rust-b:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-b

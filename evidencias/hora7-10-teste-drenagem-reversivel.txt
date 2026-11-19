@@ -1,0 +1,74 @@
+### 2026-11-19T03:33:09Z TESTE DA ACAO REVERSIVEL (apos corrigir scripts/admin.sh para sed BSD/GNU): drenar e restaurar rust-b
+--- pool antes
+  server rust-a:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-a
+  server rust-b:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-b
+--- drenar
+   nginx -t: nginx: the configuration file /etc/nginx/sentinel/nginx.conf syntax is ok
+   nginx -t: nginx: configuration file /etc/nginx/sentinel/nginx.conf test is successful
+2026/11/19 03:33:10 [notice] 1811#1811: signal process started
+[ ok ] Nginx recarregado (2026-11-19T03:33:10Z)
+--- pool durante
+  server rust-a:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-a
+  server rust-b:8080 max_fails=3 fail_timeout=10s down;   # POOL:rust-b
+--- 20 requisicoes com B drenado (esperado: tudo por A, 200, sem retry)
+seq  status  no        tempo_s   request_id
+1    200     rust-a    0.003470  597de84c5cc50739497afbdff98178da
+2    200     rust-a    0.002436  5c50317b7eb3a3a1d84939f679a5c986
+3    200     rust-a    0.002310  0b058446122ec028a6613e5e611dd97d
+4    200     rust-a    0.002654  3601174f7fe2a7500edb66bbaed5c1d5
+5    200     rust-a    0.002940  48ec2ad661503a4545d5a9613d7956b0
+6    200     rust-a    0.003966  bed169a83c3c783b5a6757d0fd3656d2
+7    200     rust-a    0.002916  5cb3db8026ca840002244964ca833a98
+8    200     rust-a    0.004375  e01f9b396580bb4fdfed4279158c64b7
+9    200     rust-a    0.002674  c5fb8b09ac7215b27cc3cc5b61bbcfb1
+10   200     rust-a    0.004385  1bbd64359662f928b878d9268ea9890b
+11   200     rust-a    0.002927  e57925d79b72beb6380960392861e4dd
+12   200     rust-a    0.003363  2da5527388765b2dcdc3026e3d1cad53
+13   200     rust-a    0.002894  e2c6305707a9c3a91a7434c4e87a8b5a
+14   200     rust-a    0.002910  9755fb7e576ac58e4065459308faecab
+15   200     rust-a    0.004334  c0a70a59ef11be8d10d20d2c81188999
+16   200     rust-a    0.003225  aa54c49e7d33ffd878146582e143d2c4
+17   200     rust-a    0.002181  eb1d75d74eeda0093805f5b1f9250b31
+18   200     rust-a    0.001902  64749deb58174b251d106e1a7eded65d
+19   200     rust-a    0.001680  95b5d15cc9abb1e7530e386a2ce6210f
+20   200     rust-a    0.002828  415dc7b8edfcbd45d1af9f7a00065a83
+--- resumo (20 requisicoes para http://localhost:8080/)
+por no:     rust-a=20  
+por status: 200=20  
+--- restaurar
+   nginx -t: nginx: the configuration file /etc/nginx/sentinel/nginx.conf syntax is ok
+   nginx -t: nginx: configuration file /etc/nginx/sentinel/nginx.conf test is successful
+2026/11/19 03:33:13 [notice] 1827#1827: signal process started
+[ ok ] Nginx recarregado (2026-11-19T03:33:13Z)
+--- pool depois
+  server rust-a:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-a
+  server rust-b:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-b
+--- 20 requisicoes com B de volta (esperado: alternancia A/B)
+seq  status  no        tempo_s   request_id
+1    200     rust-a    0.005357  7f57fe712d478f431771f6796524ae17
+2    200     rust-b    0.004001  b4434ec384c5d95db727651914f47828
+3    200     rust-a    0.004682  631b524a1ebaa65c0827c0aebfae9997
+4    200     rust-b    0.004377  a2c1c31aaee0f027144d222b613dc979
+5    200     rust-a    0.003034  8b26ab534df5c9de52e7295c730d676b
+6    200     rust-a    0.003370  a0db0d58d5ad76d221cccbb3cd1475c9
+7    200     rust-b    0.003039  409f9adeb21f25b2e6057f032e99e992
+8    200     rust-a    0.003513  7d5c2e2570f205e9699530534740ab6f
+9    200     rust-b    0.004720  660074aa520e932fc63a199e907eb9b3
+10   200     rust-a    0.002190  d2f3afc01081e232eb3482966cf9a8e0
+11   200     rust-b    0.002089  ad89f3c63f246aa08795c9c17fca01d0
+12   200     rust-a    0.002009  5dc2c644fe159b88135802c18d383d76
+13   200     rust-b    0.002784  fdb42f25fd245f41260776f313daf76f
+14   200     rust-b    0.002238  8ffb4875ff48f39b4e14b63df7006e5e
+15   200     rust-a    0.003913  7e55e0ab6ed3e7a7f78947ab51a26017
+16   200     rust-b    0.005252  5691eea5b5de74867366d6272592e3d9
+17   200     rust-a    0.003246  22628a6cc0f9e666318bb53e37d4eb2f
+18   200     rust-b    0.003226  cf10a7f5ca17af1fec38efdc9e305b23
+19   200     rust-a    0.003741  2adb25db06b0be584ee99b24a6eb50bc
+20   200     rust-b    0.003525  ed5fb1976da318eba803202c7de32f76
+--- resumo (20 requisicoes para http://localhost:8080/)
+por no:     rust-a=10  rust-b=10  
+por status: 200=20  
+--- pool.log
+2026-11-19T03:30:27Z restaurar rust-b (copia: evidencias/nginx.conf.20261119-033027.bak)
+2026-11-19T03:33:10Z drenar rust-b (copia: evidencias/nginx.conf.20261119-033309.bak)
+2026-11-19T03:33:13Z restaurar rust-b (copia: evidencias/nginx.conf.20261119-033313.bak)

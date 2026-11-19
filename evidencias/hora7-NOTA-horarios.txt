@@ -1,0 +1,8 @@
+Nota sobre os horarios de evidencias/hora7-eventos-inc.txt (saida de scripts/inc.sh iniciar)
+
+O exercicio foi executado em 19/11/2026 num macOS (Docker via OrbStack). O inc.sh usa "date -d" (GNU);
+no macOS foi usado um shim local de "date" (fora do repositorio). O shim converteu o horario do 1o evento
+com fuso errado: a linha "06:27:35  O watchdog marca Rust B como DOWN..." deve ser lida como 03:27:35 UTC.
+A fonte primaria e o log do watchdog (evidencias/20261119-032929_antes-do-reinicio/log-watchdog.txt):
+  2026-11-19T03:27:35.075Z watchdog ERROR event=state_change target=rust-b from=up to=down consecutive_failures=3 reason=http_503
+Os demais horarios (03:27:00, 03:28:10, 03:28:42, 03:29:30, 03:30:00) estao corretos (UTC).

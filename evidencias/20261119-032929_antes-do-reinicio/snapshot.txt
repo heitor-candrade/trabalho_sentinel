@@ -1,0 +1,21 @@
+instante (UTC): 2026-11-19T03:29:33Z
+
+WATCHDOG  (estado | falhas consecutivas | idade da ultima sondagem | ultimo motivo)
+  rust-a   UP    falhas=0  idade=3.1   s ultimo=ok (1ms)
+  rust-b   DOWN  falhas=26 idade=3.2   s ultimo=http_503 (1ms)
+
+NOS RUST  (visao interna de cada no)
+  node=rust-a ready_flag=true effective_ready=true delay_ms=0 uptime_s=1397
+  node=rust-b ready_flag=false effective_ready=false delay_ms=0 uptime_s=1543
+
+PROMETHEUS  (coleta e alertas)
+  coleta rust/rust-a:8080: up
+  coleta rust/rust-b:8080: up
+  coleta watchdog/watchdog:9100: up
+  ALERTA FIRING NoDown rust-b  [alta]
+
+NGINX  (stub_status)
+  Active connections: 1 
+  server accepts handled requests
+   5970 5970 5970 
+  Reading: 0 Writing: 1 Waiting: 0 

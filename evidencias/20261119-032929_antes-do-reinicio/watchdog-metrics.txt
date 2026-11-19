@@ -1,0 +1,48 @@
+# HELP watchdog_target_up 1 se o watchdog considera o alvo UP.
+# TYPE watchdog_target_up gauge
+watchdog_target_up{target="rust-a"} 1
+watchdog_target_up{target="rust-b"} 0
+# HELP watchdog_target_down 1 se o watchdog considera o alvo DOWN.
+# TYPE watchdog_target_down gauge
+watchdog_target_down{target="rust-a"} 0
+watchdog_target_down{target="rust-b"} 1
+# HELP watchdog_consecutive_failures Falhas de sondagem consecutivas.
+# TYPE watchdog_consecutive_failures gauge
+watchdog_consecutive_failures{target="rust-a"} 0
+watchdog_consecutive_failures{target="rust-b"} 26
+# HELP watchdog_probe_duration_seconds Duracao da ultima sondagem.
+# TYPE watchdog_probe_duration_seconds gauge
+watchdog_probe_duration_seconds{target="rust-a"} 0.001316
+watchdog_probe_duration_seconds{target="rust-b"} 0.001536
+# HELP watchdog_last_probe_timestamp_seconds Instante (epoch) da ultima sondagem concluida.
+# TYPE watchdog_last_probe_timestamp_seconds gauge
+watchdog_last_probe_timestamp_seconds{target="rust-a"} 1795058970.229
+watchdog_last_probe_timestamp_seconds{target="rust-b"} 1795058970.123
+# HELP watchdog_probes_total Sondagens realizadas, por resultado.
+# TYPE watchdog_probes_total counter
+watchdog_probes_total{target="rust-a",result="ok"} 193
+watchdog_probes_total{target="rust-a",result="fail"} 11
+watchdog_probes_total{target="rust-b",result="ok"} 178
+watchdog_probes_total{target="rust-b",result="fail"} 26
+# HELP watchdog_probe_failures_total Falhas de sondagem por motivo.
+# TYPE watchdog_probe_failures_total counter
+watchdog_probe_failures_total{target="rust-a",reason="http_503"} 11
+watchdog_probe_failures_total{target="rust-b",reason="http_503"} 26
+# HELP watchdog_state_changes_total Mudancas de estado por destino.
+# TYPE watchdog_state_changes_total counter
+watchdog_state_changes_total{target="rust-a",to="up"} 1
+watchdog_state_changes_total{target="rust-a",to="down"} 1
+watchdog_state_changes_total{target="rust-b",to="up"} 0
+watchdog_state_changes_total{target="rust-b",to="down"} 1
+# HELP watchdog_config_interval_seconds Intervalo de sondagem configurado.
+# TYPE watchdog_config_interval_seconds gauge
+watchdog_config_interval_seconds 5.0
+# HELP watchdog_config_timeout_seconds Timeout de sondagem configurado.
+# TYPE watchdog_config_timeout_seconds gauge
+watchdog_config_timeout_seconds 2.0
+# HELP watchdog_config_failure_threshold Falhas consecutivas para marcar DOWN.
+# TYPE watchdog_config_failure_threshold gauge
+watchdog_config_failure_threshold 3
+# HELP watchdog_uptime_seconds Tempo de vida do processo do watchdog.
+# TYPE watchdog_uptime_seconds gauge
+watchdog_uptime_seconds 1017.516

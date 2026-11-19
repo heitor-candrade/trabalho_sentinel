@@ -1,0 +1,99 @@
+\documentclass[10pt,a4paper]{article}
+\input{preambulo}
+\begin{document}
+
+\titulosentinel{Relatório de Incidente -- Operação Sentinel (Entrega F)}{FEELT37802 - Sistemas Distribuídos (2026/2) \,·\, Prof. Renato Carrijo \,·\, Equipe: Heitor Carvalho Andrade (líder, 12311ECP023) e integrantes}
+
+\textbf{Incidente:} ``O servidor está vivo, mas o sistema não confia nele'' (Hora 7), conduzido com \cmd{scripts/inc.sh iniciar} em
+\textbf{19/11/2026, 03:27 a 03:31 UTC}, com tráfego de fundo de 3~req/s. Nesta execução o nó afetado foi o \textbf{Rust~B} (o enunciado
+descreve o roteiro com o Rust~A; os eventos são os mesmos, trocando o nó). Todos os horários são UTC e vêm dos arquivos
+\cmd{evidencias/hora7-*}, \cmd{evidencias/20261119-032645_linha-de-base/} e \cmd{evidencias/20261119-032929_antes-do-reinicio/}.
+
+\section{Resumo em três linhas}
+O watchdog marcou o Rust~B como DOWN às 03:27:35 (três sondagens \cmd{/health/ready} com HTTP~503) enquanto o Nginx seguia entregando 200 por B;
+aos 03:28:42 surgiram retries e latências de 1~s, causadas por uma regra de rede (atraso 150~ms, perda 25\%) na saída de B para o Nginx.
+A equipe preservou evidências, decidiu \emph{retirar B do balanceador} (ação reversível) em vez de reiniciar, localizou as duas causas imediatas
+(prontidão desligada em B e regra de rede) e confirmou a recuperação às 03:31:00 sem nenhum reinício de contêiner.
+
+\section{Linha do tempo}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{@{}>{\ttfamily}l>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}p{4.6cm}@{}}
+\toprule
+\textbf{UTC} & \textbf{O que aconteceu} & \textbf{Evidência}\\ \midrule
+03:26:35 & Estado normal confirmado: 7 contêineres \cmd{healthy}, watchdog A e B UP, nenhum alerta, nenhuma regra de rede (\cmd{chaos.sh status todos}). Linha de base congelada. & \cmd{hora7-00-antes.txt}; \cmd{20261119-032645_linha-de-base/}\\
+03:27:00 & Início do exercício (\cmd{inc.sh iniciar}). & \cmd{hora7-eventos-inc.txt}\\
+03:27:25--35 & Watchdog: três sondagens seguidas de B com \cmd{reason=http_503}; \cmd{state_change rust-b up\seta{}down} às 03:27:35,075. & \cmd{log-watchdog.txt} (antes-do-reinicio)\\
+03:27:41 & \cmd{NoDown\{rust-b\}} entra em \emph{pending}; dispara às 03:27:56 (\cmd{for: 15s}). & \cmd{hora7-alertas-prometheus.txt}\\
+03:27:47 & Painel: ``rust-b está DOWN segundo o watchdog: 4 falhas seguidas (motivo: http\_503)''. & \cmd{hora7-painel-20261119-032747Z-rust-b-down.jpg}\\
+03:28:02 & \textbf{Checagem 1.} Usuário (60~s): 176 req, 100\% 200, 50\%/50\% A/B, 0 retry, p95 1~ms. De um \emph{terceiro ponto} (toolbox): \cmd{rust-b/health/ready \seta{} 503}, \cmd{rust-b/health/live \seta{} 200}; \cmd{admin status}: \cmd{rust-b ready_flag=false effective_ready=false delay_ms=0 uptime_s=1441}. Idade da última sondagem $<5$~s; \cmd{up} = 1 nos 4 alvos. & \cmd{hora7-01-checagem-1.txt}\\
+03:28:10 & Evento anunciado: ``o Nginx continua registrando 200 em requisições encaminhadas a B'' (confirmado: linhas \cmd{node=rust-b status=200} às 03:27:46). & \cmd{hora7-eventos-inc.txt}; \cmd{hora7-01-checagem-1.txt}\\
+03:28:37 & \textbf{Checagem 2.} Quadro igual ao da checagem 1 (sem latência, sem retry). & \cmd{hora7-02-checagem-2.txt}\\
+03:28:42 & Evento anunciado: ``o tempo de resposta aumenta; requisições repetidas em outro nó''. & \cmd{hora7-eventos-inc.txt}\\
+03:29:11 & \textbf{Checagem 3.} Usuário (60~s): 5 retries (2,8\%), máx. 1,005~s, B caiu para 35\% do tráfego; \cmd{chaos.sh status}: em \cmd{rust-b}, \cmd{[saida -> nginx (10.9.8.10)] delay 150ms loss 25\%}; nos demais contêineres, nenhuma regra. Watchdog: B DOWN, \cmd{falhas=19}, ainda \cmd{http_503} (sondagens respondidas em 4~ms: o caminho watchdog\seta{}B não tem a regra). & \cmd{hora7-03-checagem-3.txt}\\
+03:29:13--23 & Captura na interface de B: SYN do Nginx às 13,616 respondido às 14,782 (1,17~s) e recusado com RST (o Nginx desistiu em 1~s); \emph{handshakes} com $\sim$150~ms; sondagem do watchdog (10.9.8.20) respondida de imediato. & \cmd{hora7-04-captura-rust-b.txt}\\
+03:29:29 & Regra de ouro: evidências congeladas \textbf{antes} de qualquer ação (\cmd{evidence.sh antes-do-reinicio --rede}). & \cmd{20261119-032929_antes-do-reinicio/}\\
+03:29:30 & Evento anunciado: ``o painel mostra B em vermelho, mas o Nginx segue incluindo B''. & \cmd{hora7-eventos-inc.txt}\\
+03:29:44 & \textbf{Decisão:} drenar B do Nginx (\cmd{admin.sh pool drenar rust-b}), sem reiniciar nada. O comando \textbf{não surtiu efeito} nesta máquina (macOS: o \cmd{sed -i} do script é GNU); detectado na hora pelo \cmd{pool status} ``depois'' idêntico ao ``antes''. & \cmd{hora7-05-decisao-drenar-b.txt}\\
+03:30:00 & Fim da injeção (o sistema fica como está até alguém agir). & \cmd{hora7-eventos-inc.txt}\\
+03:30:17 & \textbf{Checagem após a decisão:} B ainda com 15\% do tráfego, 9 retries, p95 1,002~s, máx. 2,014~s: confirma que a drenagem não ocorreu. Causas imediatas já identificadas nas checagens; \textbf{correção dirigida}: \cmd{admin.sh ready rust-b 1} e \cmd{chaos.sh limpar rust-b}. & \cmd{hora7-06-apos-drenagem.txt}; \cmd{hora7-07-correcao.txt}\\
+03:30:25 & Watchdog: \cmd{state_change rust-b down\seta{}up} (duas sondagens boas). 03:30:27 \cmd{pool restaurar rust-b} (sem efeito, pois B nunca saiu). 03:30:32: nenhum alerta ativo. & \cmd{log-watchdog}; \cmd{hora7-08-restaurar-b.txt}; \cmd{hora7-alertas-prometheus.txt}\\
+03:31:00 & \textbf{Recuperação confirmada}: 20 req \seta{} \cmd{rust-a=9 rust-b=11}, 100\% 200; usuário (30~s): 108 req, 0 retry, p95 1~ms; \cmd{reinicios=0} em nginx, rust-a, rust-b e watchdog; nenhuma regra de rede. 03:31:11: \cmd{inc.sh resolver}. & \cmd{hora7-09-recuperacao-confirmada.txt}\\
+03:33:10 & Pós-incidente: \cmd{scripts/admin.sh} corrigido (sed portável) e a ação reversível \textbf{provada}: com B drenado, 20/20 requisições por A; restaurado, 10/10. & \cmd{hora7-10-teste-drenagem-reversivel.txt}\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Fatos versus inferências}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{@{}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X@{}}
+\toprule
+\textbf{Fatos (com evidência e horário)} & \textbf{Inferências (o que \emph{não} se podia afirmar)}\\ \midrule
+O watchdog recebeu \textbf{HTTP 503} de \cmd{rust-b:8080/health/ready} em três sondagens seguidas e marcou DOWN às 03:27:35 (\cmd{reason=http_503}, não \cmd{timeout}). &
+``O Rust~B caiu/travou'': \textbf{falso}. \cmd{/health/live} 200, \cmd{uptime_s} crescendo, Nginx entregando 200 por B, \cmd{docker compose ps} \cmd{healthy}.\\ \midrule
+O Nginx continuou encaminhando a B e recebendo 200 (\cmd{node=rust-b status=200} às 03:27:46; 50\%/50\% às 03:28:02). &
+``O watchdog está errado / com falha de rede'': \textbf{falso}. Um terceiro ponto (toolbox) viu o mesmo 503, e o próprio nó informou \cmd{ready_flag=false}.\\ \midrule
+De um terceiro ponto: \cmd{ready \seta{} 503} e \cmd{live \seta{} 200}; \cmd{admin status}: \cmd{ready_flag=false} em B (03:28:02). &
+``O monitor parou'' (evento 4 do enunciado): \textbf{não ocorreu nesta execução}: \cmd{up\{job="watchdog"\}=1}, idade da sondagem $<5$~s, painel atualizando.\\ \midrule
+A partir de 03:28:42: retries \cmd{upstream_status=504, 200} com \cmd{req_time≈1,0 s}; \cmd{chaos.sh status} mostrou \cmd{delay 150ms loss 25\%} na saída de B \textbf{só para o Nginx}; a captura mostrou SYN-ACK atrasado 1,17~s e RST do Nginx. &
+``A latência vem do nó B sobrecarregado'': \textbf{falso}. \cmd{delay_ms=0}, p95 \emph{no nó} em milissegundos, e a sondagem do watchdog para B respondia em 4~ms (caminho sem a regra).\\ \midrule
+A regra de rede \textbf{não constava} em \cmd{evidencias/chaos.log} (nossos scripts registram toda injeção): foi aplicada por outro agente. &
+``Alguém da equipe rodou \cmd{chaos.sh}'': refutado pelo log; a origem exata (o exercício) está fora do que o sistema registra.\\
+\bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Hipóteses e como foram testadas}
+\begin{enumerate}[leftmargin=*]
+  \item \textbf{B marcou-se ``não pronto'' (prontidão desligada), processo vivo.} Teste: \cmd{curl} de um terceiro ponto a \cmd{/health/ready} e \cmd{/health/live} e \cmd{admin.sh status}. Resultado: 503/200 e \cmd{ready_flag=false}. \textbf{Confirmada} (03:28:02).
+  \item \textbf{Partição ou perda de rede entre watchdog e B} (o observador erra, o nó está bem). Teste: a mesma sondagem a partir da toolbox; o motivo registrado pelo watchdog. Resultado: toolbox viu o mesmo 503; motivo \cmd{http_503} em 1--4~ms (há conectividade e resposta HTTP). \textbf{Refutada}.
+  \item \textbf{B morreu ou reiniciou em loop.} Teste: \cmd{live}, \cmd{uptime_s}, \cmd{docker compose ps}, \cmd{RestartCount}. Resultado: \cmd{live} 200, \cmd{uptime_s=1441} e crescendo, \cmd{healthy}, \cmd{reinicios=0}. \textbf{Refutada}.
+  \item \textbf{Degradação de rede no caminho Nginx$\leftrightarrow$B} (surgiu com o evento das 03:28:42). Teste: \cmd{status.sh --usuario} (retries, \cmd{req_time}), \cmd{chaos.sh status todos}, \cmd{chaos.sh captura rust-b 10}. Resultado: 5 retries/60~s, \cmd{netem delay 150ms loss 25\%} na saída de B para 10.9.8.10, SYN-ACK em 1,17~s seguido de RST. \textbf{Confirmada} (03:29:11).
+  \item \textbf{O monitor parou de atualizar} (evento 4 do enunciado). Teste: \cmd{promq 'time() - watchdog_last_probe_timestamp_seconds'} e \cmd{'up'}; painel. Resultado: idade $<5$~s, \cmd{up=1}, painel atualizado. \textbf{Refutada nesta execução} (o painel passou a mostrar B em vermelho, que é outra coisa).
+\end{enumerate}
+
+\textbf{Próxima verificação mais informativa} (escolhida após o primeiro evento): sondar B \emph{a partir de um terceiro ponto} (\cmd{docker compose exec -T toolbox curl -s -m 2 -o /dev/null -w '\%\{http_code\}' http://rust-b:8080/health/ready} e \cmd{/health/live}) e ler \cmd{admin.sh status}. Uma única rodada separa as três primeiras hipóteses: se o terceiro ponto vê 200 e o watchdog vê falha, o problema é do observador ou da rede dele; se vê 503 com \cmd{live} 200, o nó está vivo e \emph{diz} que não está pronto; se nada responde, o nó caiu.
+
+\section{Decisão, riscos e reversibilidade}
+\textbf{Decisão (03:29:44):} \emph{retirar B do balanceador} com \cmd{scripts/admin.sh pool drenar rust-b}, mantendo o contêiner vivo para diagnóstico, e \textbf{não reiniciar nada}. Motivos: (a) o impacto no usuário era latência e retries, não erro; (b) reiniciar destruiria o estado que explicava o incidente (flag de prontidão, regra de rede, logs) e não atacaria a causa; (c) a drenagem é desfeita com um comando (\cmd{pool restaurar}) e o script guarda uma cópia do \cmd{nginx.conf} em \cmd{evidencias/}.
+
+\textbf{Riscos aceitos:} A vira ponto único de falha e recebe 100\% do tráfego (3~req/s, muito abaixo da capacidade); se A falhasse durante a drenagem, o serviço cairia. Mitigação: manter o fundo baixo, acompanhar \cmd{status.sh --vivo} e devolver B assim que o watchdog o considerasse UP.
+
+\textbf{O que deu errado e como vimos:} nesta máquina (macOS) o \cmd{sed -i -E} do script é incompatível com o \cmd{sed} BSD; o comando imprimiu um erro, o \cmd{nginx -t} passou (arquivo inalterado) e o \cmd{pool status} ``depois'' saiu igual ao ``antes''. A checagem das 03:30:17 confirmou: B ainda recebia 15\% das requisições, com 9 retries. Como as duas causas imediatas já estavam identificadas, aplicamos a \textbf{correção dirigida} (\cmd{ready rust-b 1}; \cmd{chaos.sh limpar rust-b}), ambas reversíveis e registradas em \cmd{acoes.log}/\cmd{chaos.log}. Depois do incidente corrigimos o script (sed portável, commit ``admin.sh: sed portavel'') e provamos a ação: B drenado \seta{} 20/20 por A; restaurado \seta{} 10/10 (\cmd{hora7-10-teste-drenagem-reversivel.txt}).
+
+\textbf{Como confirmamos a recuperação (03:30:25--03:31:00):} watchdog \cmd{down\seta{}up} para B após duas sondagens boas; nenhum alerta ativo (\cmd{NoDown} resolvido às 03:30:32); 20 requisições alternando A/B com 100\% 200; 30~s de tráfego sem retry e p95 de 1~ms; \cmd{RestartCount=0} nos quatro serviços (nenhum reinício em loop); \cmd{chaos.sh status todos} sem regras; painel verde.
+
+\section{Prevenção}
+\begin{itemize}[leftmargin=*]
+  \item \textbf{Arquitetura:} o balanceador deve consultar a prontidão. O Nginx de código aberto não sonda \cmd{/health/ready}; propomos um controlador simples (pode ser o próprio watchdog, ou um \emph{sidecar}) que, ao marcar DOWN por \cmd{http_503} \emph{confirmado por um segundo ponto}, aplique \cmd{pool drenar} e, ao voltar a UP por $N$ sondagens, \cmd{pool restaurar}. Alternativa: um balanceador com sondagem ativa (HAProxy \cmd{option httpchk}, Nginx Plus, Envoy).
+  \item \textbf{Monitoramento:} medir o caminho do usuário, não só o nó: exportar do log do Nginx (ou de uma sonda sintética que passe pelo Nginx) a latência p95, a taxa de retries (\cmd{upstream} com vírgula) e o status por nó. Foi essa visão que mostrou o segundo problema (rede), invisível em \cmd{sentinel_app_request_duration_seconds}.
+  \item \textbf{Sondar de mais de um ponto:} o watchdog e o Nginx viam caminhos diferentes para B; uma segunda sondagem (toolbox ou um segundo watchdog) distingue ``nó diz que não está pronto'' de ``rede até o nó''.
+  \item \textbf{Alertas:} (a) \emph{Discordância}: \cmd{watchdog_target_down == 1} e, ao mesmo tempo, requisições 200 do mesmo nó no Nginx por mais de 1~min (sinal de ``vivo, mas não pronto'' ou de observador enganado); (b) \emph{Retries}: taxa de requisições com retry $> 2\%$ por 1~min (hoje só visível em \cmd{status.sh --usuario}); (c) manter \cmd{MonitorParado} com \cmd{absent()} e \cmd{up == 0} (provado na Hora 6); (d) lembrar que \cmd{TaxaDeErroAlta} não enxerga a primeira rajada de uma série nova (Hora 6, exp.~4): inicializar os contadores com zero em cada rota/código no arranque dos nós.
+  \item \textbf{Operação:} registrar toda ação administrativa (\cmd{acoes.log}, \cmd{pool.log}, \cmd{chaos.log} já fazem isso) e exigir \cmd{evidence.sh} antes de reiniciar; testar os scripts de resposta no sistema operacional onde serão usados (o erro do \cmd{sed} teria custado minutos num incidente real).
+\end{itemize}
+
+\section{Limites da simulação}
+Tudo roda em \textbf{um único host, um kernel e um relógio}: não há falha independente de hardware, energia, zona ou roteador, e os horários dos logs são comparáveis só porque todos os contêineres compartilham o relógio. As falhas de rede atuam na \textbf{saída de uma interface virtual} (\cmd{tc netem}), opcionalmente por destino, o que explica por que Nginx e watchdog viram B de formas diferentes; numa rede real, perda e atraso seriam assimétricos, variáveis e também na entrada. O tráfego (3~req/s) não revela saturação, filas nem esgotamento de \emph{workers}. O Docker DNS remove o nome de um contêiner parado (vimos \cmd{reason=dns} em vez de \cmd{timeout}), comportamento que não existe com IPs fixos em máquinas reais. O \cmd{HEALTHCHECK} do Docker roda dentro do contêiner (\cmd{127.0.0.1}), por isso continua \cmd{healthy} em qualquer falha de rede. Este ambiente foi executado em macOS (Docker via OrbStack, kernel Linux 7.2 da VM): o laboratório foi desenhado para Linux, e um dos scripts de resposta (\cmd{admin.sh pool}) falhou por diferença do \cmd{sed}; o mesmo cenário em Linux não teria esse passo.
+
+\textbf{Melhoria priorizada e teste futuro:} prontidão consultada pelo balanceador (controlador watchdog\seta{}\cmd{pool drenar/restaurar}, com confirmação por um segundo ponto), porque foi a lacuna comum ao experimento 6 e ao incidente. Teste futuro: repetir o incidente com o controlador ligado e medir (i) o tempo entre o DOWN e a saída de B do pool (meta $<30$~s), (ii) zero retries vistos pelo usuário após a saída e (iii) retorno automático de B após a correção, sem reinício.
+
+\end{document}

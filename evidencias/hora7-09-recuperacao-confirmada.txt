@@ -1,0 +1,92 @@
+### 2026-11-19T03:30:47Z CONFIRMACAO DA RECUPERACAO
+--- 20 requisicoes
+seq  status  no        tempo_s   request_id
+1    200     rust-a    0.003008  57b0ea074f4aab3f841d05dc766ff2cf
+2    200     rust-b    0.003331  25c3f0c41106ad0d3c1cb6c81f6eebc0
+3    200     rust-a    0.002896  cef110c16e39974612a4e756a2d828e9
+4    200     rust-b    0.004904  81621058141a4ce8393e7bc3c7e3c955
+5    200     rust-b    0.002797  806ebe44c4f9af4849df544b7861a306
+6    200     rust-a    0.003612  5e9516a6867575fbe17a05bd144e15b6
+7    200     rust-b    0.002294  a153715c6cb2edc68c844099f1e77f33
+8    200     rust-a    0.003462  0a4d767a32f20c908c249202f339c8d8
+9    200     rust-b    0.003641  4e29a93b7a95ca91551f73523de1f456
+10   200     rust-a    0.004147  61f0595defd782c985701c2ff262e5bc
+11   200     rust-b    0.003008  a4231157be63175e6b04315b507e5847
+12   200     rust-a    0.003284  47f0a9e9bb8a7b3c956648c220f0e18d
+13   200     rust-b    0.003669  2d0e82a5762aae9f7005d7206995afc9
+14   200     rust-b    0.003177  9cdfb13fe7e55d88189b3127a5c42e41
+15   200     rust-a    0.003840  beac2b200a9b2962a8f400ca136346d5
+16   200     rust-b    0.003671  b64c9237aedd032df59a582f41647cbe
+17   200     rust-a    0.003931  f704dca50320d420b95b16f93f4a8e7f
+18   200     rust-b    0.003726  2f0f0da296ddb3143bd60624dd0e09e9
+19   200     rust-a    0.003464  788e450622e8f7a4e3616f7082d4c459
+20   200     rust-b    0.002065  c2e579210d5fd82cf853d1a652e40ede
+--- resumo (20 requisicoes para http://localhost:8080/)
+por no:     rust-a=9  rust-b=11  
+por status: 200=20  
+--- status
+CONTEINERES
+SERVICE      STATE     <no value>   STATUS
+nginx        running   healthy      Up 26 minutes (healthy)
+painel       running   healthy      Up 26 minutes (healthy)
+prometheus   running   healthy      Up 26 minutes (healthy)
+rust-a       running   healthy      Up 24 minutes (healthy)
+rust-b       running   healthy      Up 26 minutes (healthy)
+toolbox      running                Up 26 minutes
+trafego      running                Up 25 minutes
+watchdog     running   healthy      Up 18 minutes (healthy)
+
+instante (UTC): 2026-11-19T03:30:49Z
+
+WATCHDOG  (estado | falhas consecutivas | idade da ultima sondagem | ultimo motivo)
+  rust-a   UP    falhas=0  idade=3.8   s ultimo=ok (3ms)
+  rust-b   UP    falhas=0  idade=3.9   s ultimo=ok (4ms)
+
+NOS RUST  (visao interna de cada no)
+  node=rust-a ready_flag=true effective_ready=true delay_ms=0 uptime_s=1473
+  node=rust-b ready_flag=true effective_ready=true delay_ms=0 uptime_s=1619
+
+PROMETHEUS  (coleta e alertas)
+  coleta rust/rust-b:8080: up
+  coleta rust/rust-a:8080: up
+  coleta watchdog/watchdog:9100: up
+  alertas: nenhum ativo
+
+NGINX  (stub_status)
+  Active connections: 1 
+  server accepts handled requests
+   6266 6266 6266 
+  Reading: 0 Writing: 1 Waiting: 0 
+--- usuario (30 s)
+janela: ultimos 30s | fonte: nginx | requisicoes: 108
+  por no:       rust-a 65 (60%)   rust-b 43 (40%)   
+  por status:   200=108  
+  com retry:    0 (0.0%)   disponibilidade: 100.0%
+  latencia (s): media 0.001  p50 0.001  p95 0.001  max 0.003
+--- reinicios (esperado 0)
+nginx reinicios=0 iniciou=2026-11-19T03:03:52.800999993Z
+rust-a reinicios=0 iniciou=2026-11-19T03:06:15.432642773Z
+rust-b reinicios=0 iniciou=2026-11-19T03:03:49.440512894Z
+watchdog reinicios=0 iniciou=2026-11-19T03:12:34.40364285Z
+--- regras de rede
+== nginx
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== rust-a
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== rust-b
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== watchdog
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== prometheus
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== toolbox
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== painel
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)

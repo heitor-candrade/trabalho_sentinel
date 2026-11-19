@@ -1,0 +1,56 @@
+### 2026-11-19T03:26:35Z scripts/status.sh
+CONTEINERES
+SERVICE      STATE     <no value>   STATUS
+nginx        running   healthy      Up 22 minutes (healthy)
+painel       running   healthy      Up 22 minutes (healthy)
+prometheus   running   healthy      Up 22 minutes (healthy)
+rust-a       running   healthy      Up 20 minutes (healthy)
+rust-b       running   healthy      Up 22 minutes (healthy)
+toolbox      running                Up 22 minutes
+trafego      running                Up 21 minutes
+watchdog     running   healthy      Up 14 minutes (healthy)
+
+instante (UTC): 2026-11-19T03:26:35Z
+
+WATCHDOG  (estado | falhas consecutivas | idade da ultima sondagem | ultimo motivo)
+  rust-a   UP    falhas=0  idade=0.5   s ultimo=ok (1ms)
+  rust-b   UP    falhas=0  idade=0.6   s ultimo=ok (1ms)
+
+NOS RUST  (visao interna de cada no)
+  node=rust-a ready_flag=true effective_ready=true delay_ms=0 uptime_s=1220
+  node=rust-b ready_flag=true effective_ready=true delay_ms=0 uptime_s=1365
+
+PROMETHEUS  (coleta e alertas)
+  coleta rust/rust-a:8080: up
+  coleta rust/rust-b:8080: up
+  coleta watchdog/watchdog:9100: up
+  alertas: nenhum ativo
+
+NGINX  (stub_status)
+  Active connections: 1 
+  server accepts handled requests
+   5321 5321 5321 
+  Reading: 0 Writing: 1 Waiting: 0 
+
+### 2026-11-19T03:26:35Z scripts/chaos.sh status todos
+== nginx
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== rust-a
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== rust-b
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== watchdog
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== prometheus
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== toolbox
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== painel
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)

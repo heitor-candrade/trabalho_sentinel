@@ -1,0 +1,2 @@
+node=rust-a ready_flag=true effective_ready=true delay_ms=0 uptime_s=1397
+node=rust-b ready_flag=false effective_ready=false delay_ms=0 uptime_s=1542

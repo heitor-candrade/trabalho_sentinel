@@ -1,0 +1,6 @@
+rotulo=linha-de-base
+instante_utc=2026-11-19T03:26:45Z
+janela_dos_logs=3m
+host=KA00151.local
+kernel=27.2.0
+commit=a5e6a3b

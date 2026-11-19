@@ -1,0 +1,39 @@
+# HELP sentinel_http_requests_total Requisicoes HTTP por rota e codigo.
+# TYPE sentinel_http_requests_total counter
+sentinel_http_requests_total{node="rust-b",route="admin",code="200"} 54
+sentinel_http_requests_total{node="rust-b",route="erro",code="500"} 31
+sentinel_http_requests_total{node="rust-b",route="health_live",code="200"} 309
+sentinel_http_requests_total{node="rust-b",route="health_ready",code="200"} 274
+sentinel_http_requests_total{node="rust-b",route="health_ready",code="503"} 29
+sentinel_http_requests_total{node="rust-b",route="metrics",code="200"} 317
+sentinel_http_requests_total{node="rust-b",route="root",code="200"} 2531
+# HELP sentinel_app_request_duration_seconds Latencia do trafego de usuario (rotas / e /erro), medida no no.
+# TYPE sentinel_app_request_duration_seconds histogram
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="0.005"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="0.01"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="0.025"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="0.05"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="0.1"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="0.25"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="0.5"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="1"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="2.5"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="5"} 2562
+sentinel_app_request_duration_seconds_bucket{node="rust-b",le="+Inf"} 2562
+sentinel_app_request_duration_seconds_sum{node="rust-b"} 0.033914
+sentinel_app_request_duration_seconds_count{node="rust-b"} 2562
+# HELP sentinel_ready 1 se o no esta pronto para receber trafego.
+# TYPE sentinel_ready gauge
+sentinel_ready{node="rust-b"} 0
+# HELP sentinel_artificial_delay_ms Atraso artificial configurado (ms).
+# TYPE sentinel_artificial_delay_ms gauge
+sentinel_artificial_delay_ms{node="rust-b"} 0
+# HELP sentinel_inflight_requests Requisicoes em andamento (saturacao).
+# TYPE sentinel_inflight_requests gauge
+sentinel_inflight_requests{node="rust-b"} 1
+# HELP sentinel_uptime_seconds Tempo desde o inicio do processo.
+# TYPE sentinel_uptime_seconds gauge
+sentinel_uptime_seconds{node="rust-b"} 1542.71963492
+# HELP sentinel_info Informacoes estaticas do no.
+# TYPE sentinel_info gauge
+sentinel_info{node="rust-b",version="1.0.0",framework="axum"} 1

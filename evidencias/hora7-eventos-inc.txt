@@ -1,0 +1,9 @@
+== INCIDENTE EM ANDAMENTO (cerca de 3 min). Anote os horarios; investigue em outro terminal. ==
+[evento] 03:27:00  Inicio do exercicio. Trafego de fundo: 3 req/s. Sistema em estado normal.
+[evento] 06:27:35  O watchdog marca Rust B como DOWN apos tres verificacoes consecutivas sem sucesso.
+[evento] 03:28:10  O Nginx continua registrando respostas 200 em requisicoes encaminhadas a Rust B.
+[evento] 03:28:42  O tempo de resposta visto pelo usuario aumenta; algumas requisicoes passam a ser repetidas em outro no.
+[evento] 03:29:30  O painel (porta 8085) mostra Rust B em vermelho, mas o Nginx segue incluindo Rust B entre os destinos.
+[evento] 03:30:00  Fim da injecao. O sistema permanece no estado atual ate alguem agir (inc.sh resolver).
+
+[ ok ] incidente completo. Eventos salvos em /var/folders/k5/qdnz4nhs0b39gsxwk8qlkcqh0000gp/T//sentinel-inc/eventos.txt (inc.sh eventos). Para encerrar: scripts/inc.sh resolver

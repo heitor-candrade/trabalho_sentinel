@@ -1,0 +1,8 @@
+### 2026-11-19T03:30:27Z restaurar
+sed: 1: "/# POOL:rust-b$/ s/ dow ...": \1 not defined in the RE
+   nginx -t: nginx: the configuration file /etc/nginx/sentinel/nginx.conf syntax is ok
+   nginx -t: nginx: configuration file /etc/nginx/sentinel/nginx.conf test is successful
+2026/11/19 03:30:27 [notice] 1639#1639: signal process started
+[ ok ] Nginx recarregado (2026-11-19T03:30:27Z)
+  server rust-a:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-a
+  server rust-b:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-b

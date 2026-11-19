@@ -1,0 +1,9 @@
+NAME                    IMAGE                     COMMAND                  SERVICE      CREATED          STATUS                    PORTS
+sentinel-nginx-1        nginx:1.27-alpine         "/docker-entrypoint.…"   nginx        25 minutes ago   Up 25 minutes (healthy)   0.0.0.0:8080->80/tcp, [::]:8080->80/tcp
+sentinel-painel-1       sentinel-painel:local     "uvicorn app:app --h…"   painel       25 minutes ago   Up 25 minutes (healthy)   127.0.0.1:8085->8085/tcp
+sentinel-prometheus-1   prom/prometheus:v2.53.0   "/bin/prometheus --c…"   prometheus   25 minutes ago   Up 25 minutes (healthy)   127.0.0.1:9090->9090/tcp
+sentinel-rust-a-1       sentinel-rust-a:local     "/usr/local/bin/sent…"   rust-a       25 minutes ago   Up 23 minutes (healthy)   8080/tcp
+sentinel-rust-b-1       sentinel-rust-b:local     "/usr/local/bin/sent…"   rust-b       25 minutes ago   Up 25 minutes (healthy)   8080/tcp
+sentinel-toolbox-1      sentinel-toolbox:local    "sleep infinity"         toolbox      25 minutes ago   Up 25 minutes             
+sentinel-trafego-1      sentinel-toolbox:local    "/opt/sentinel/traff…"   trafego      24 minutes ago   Up 24 minutes             
+sentinel-watchdog-1     sentinel-watchdog:local   "python /app/watchdo…"   watchdog     25 minutes ago   Up 16 minutes (healthy)   9100/tcp

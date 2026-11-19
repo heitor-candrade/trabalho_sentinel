@@ -1,0 +1,12 @@
+### 2026-11-19T03:29:44Z decisao: drenar rust-b
+--- pool antes
+  server rust-a:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-a
+  server rust-b:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-b
+sed: 1: "/# POOL:rust-b$/ { /dow ...": \1 not defined in the RE
+   nginx -t: nginx: the configuration file /etc/nginx/sentinel/nginx.conf syntax is ok
+   nginx -t: nginx: configuration file /etc/nginx/sentinel/nginx.conf test is successful
+2026/11/19 03:29:44 [notice] 1582#1582: signal process started
+[ ok ] Nginx recarregado (2026-11-19T03:29:44Z)
+--- pool depois
+  server rust-a:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-a
+  server rust-b:8080 max_fails=3 fail_timeout=10s;   # POOL:rust-b
