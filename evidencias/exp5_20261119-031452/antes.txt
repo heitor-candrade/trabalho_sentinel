@@ -1,0 +1,46 @@
+### antes -- 2026-11-19T03:15:06Z
+seq  status  no        tempo_s   request_id
+1    200     rust-b    0.002733  a7180fc4db878ce493047225d8666d22
+2    200     rust-b    0.002361  3e73e049be570d04def1cb94bd22bbb6
+3    200     rust-a    0.002323  6894a80209ff3a0a7ad7f00c5f57e63f
+4    200     rust-b    0.002872  9d3a48a86f83a5b9580720367f960765
+5    200     rust-a    0.002589  f337fb01032fa04768314a6406c8733b
+6    200     rust-b    0.002473  7c073e28b3318ac695ba5da0b2d12493
+7    200     rust-a    0.002843  385dd7d099a5112b6010a03f43ffb4f0
+8    200     rust-b    0.003094  8a6ee17d2d768bfe7ad2962feb18daf5
+9    200     rust-a    0.002873  dcc2c03799a46f983af1ea1a27135f79
+10   200     rust-b    0.002804  411277fe787e281b337c365c45318b49
+11   200     rust-a    0.005738  a535d0ac93d82c5dc1a65a48aa58d824
+12   200     rust-a    0.002765  56f13e3b1f3436d86e23e2143376fffa
+13   200     rust-b    0.004336  c678a4b7fa845519f109f1cf535354e1
+14   200     rust-a    0.004173  4458a71e66a36e590a6a27c384125d5e
+15   200     rust-b    0.004218  f829ef9103672dfad446d42e0eb003a6
+16   200     rust-a    0.003502  0c5ff1ff8120443eeb3e0fd594a2f0af
+17   200     rust-b    0.002859  f9753e37e6823b554a0d740f90730e51
+18   200     rust-a    0.005402  052ecb5e02be0c61c0be0d5b0a731f54
+19   200     rust-b    0.005952  af10b54d5833d407f211cf91be7ddab2
+20   200     rust-a    0.004491  fc82e5a2f489d42ec381c37072b16f12
+--- resumo (20 requisicoes para http://localhost:8080/)
+por no:     rust-a=10  rust-b=10  
+por status: 200=20  
+instante (UTC): 2026-11-19T03:15:07Z
+
+WATCHDOG  (estado | falhas consecutivas | idade da ultima sondagem | ultimo motivo)
+  rust-a   UP    falhas=0  idade=3.1   s ultimo=ok (1ms)
+  rust-b   UP    falhas=0  idade=3.1   s ultimo=ok (1ms)
+
+NOS RUST  (visao interna de cada no)
+  node=rust-a ready_flag=true effective_ready=true delay_ms=0 uptime_s=532
+  node=rust-b ready_flag=true effective_ready=true delay_ms=0 uptime_s=678
+
+PROMETHEUS  (coleta e alertas)
+  coleta rust/rust-a:8080: up
+  coleta rust/rust-b:8080: up
+  coleta watchdog/watchdog:9100: up
+  alertas: nenhum ativo
+
+NGINX  (stub_status)
+  Active connections: 1 
+  server accepts handled requests
+   2522 2522 2522 
+  Reading: 0 Writing: 1 Waiting: 0 

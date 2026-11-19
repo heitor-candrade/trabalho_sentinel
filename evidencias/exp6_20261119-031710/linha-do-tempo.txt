@@ -1,0 +1,18 @@
+2026-11-19T03:17:10Z experimento extra 6 iniciado: ready=0 em rust-a (vivo, mas nao pronto)
+2026-11-19T03:17:10Z comandos: injetar='bash scripts/admin.sh ready rust-a 0'  recuperar='bash scripts/admin.sh ready rust-a 1'
+2026-11-19T03:17:10Z ANTES: evidence.sh exp6-antes --rede; 20 requisicoes
+[ ok ] evidencias salvas em evidencias/20261119-031710_exp6-antes
+   acoes.log
+2026-11-19T03:17:25Z INJETANDO: bash scripts/admin.sh ready rust-a 0
+ready_flag=false
+2026-11-19T03:17:25Z falha injetada; aguardando 30s
+2026-11-19T03:17:55Z DURANTE: 20 requisicoes, snapshot, docker compose ps, evidence.sh exp6-durante --rede
+[ ok ] evidencias salvas em evidencias/20261119-031808_exp6-durante
+   acoes.log
+2026-11-19T03:18:23Z RECUPERANDO: bash scripts/admin.sh ready rust-a 1
+ready_flag=true
+2026-11-19T03:18:30Z RECUPERADO: watchdog informa todos os nos UP
+2026-11-19T03:18:35Z DEPOIS: 20 requisicoes, snapshot, reinicios, evidence.sh exp6-depois --rede
+[ ok ] evidencias salvas em evidencias/20261119-031847_exp6-depois
+   acoes.log
+2026-11-19T03:19:16Z experimento extra 6 concluido

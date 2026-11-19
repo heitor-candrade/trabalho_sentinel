@@ -1,0 +1,91 @@
+### durante -- 2026-11-19T03:20:14Z
+seq  status  no        tempo_s   request_id
+1    200     rust-a    1.614112  25a8cdf0c061ad0be3c450c63295ef6d
+2    200     rust-a    1.608783  0a163f318b28233d83dcc8293f96e6f3
+3    200     rust-b    0.003961  6ec45eeb5fb6526734973735138b2b42
+4    200     rust-a    1.612683  aabb4e8b84618d6d816acde4f1cc0f84
+5    200     rust-a    1.606450  982c10a44ef07dd94afc49961a28b27c
+6    200     rust-b    0.005312  0a08809ef54f41d806aa10c7eb10030a
+7    200     rust-b    0.003494  38e72c29a535bbb0850ccb52462f23d5
+8    200     rust-a    1.605703  700b73d21efa134991e55a617bbcdd4c
+9    200     rust-a    1.616730  ecd9eed2164b496765b68b74764b6fae
+10   200     rust-a    1.615583  ca2e7731291d5a2dd3ec159493031aa2
+11   200     rust-b    0.010845  cdeb1a5900fdcd78ce2660235e633597
+12   200     rust-b    0.003600  afe8e57f4e49b9971efaa42db4a05227
+13   200     rust-a    1.607250  c8a616c153e37b070b256e4c6f9ff98e
+14   200     rust-a    1.609257  0664b814d14f85066a7fc6aa16d4fdd2
+15   200     rust-a    1.611952  e9ab88ca1faab644a3a4cc5974695957
+16   200     rust-a    1.611880  858cdbc96887c0a37290acc418f68c51
+17   200     rust-b    0.003473  7060cce219099edcb454ee2a39cdba67
+18   200     rust-b    0.004103  b4571dafe2ea6a86f4c0f3e39ef3579b
+19   200     rust-a    1.609036  b42747ed4778e813afde0457013f43c8
+20   200     rust-a    1.610557  43ae0cab772cba8ad8c589b7f9e86da8
+--- resumo (20 requisicoes para http://localhost:8080/)
+por no:     rust-a=13  rust-b=7  
+por status: 200=20  
+instante (UTC): 2026-11-19T03:20:36Z
+
+WATCHDOG  (estado | falhas consecutivas | idade da ultima sondagem | ultimo motivo)
+  rust-a   UP    falhas=0  idade=0.4   s ultimo=ok (1608ms)
+  rust-b   UP    falhas=0  idade=2.0   s ultimo=ok (3ms)
+
+NOS RUST  (visao interna de cada no)
+  node=rust-a ready_flag=true effective_ready=true delay_ms=0 uptime_s=862
+  node=rust-b ready_flag=true effective_ready=true delay_ms=0 uptime_s=1008
+
+PROMETHEUS  (coleta e alertas)
+  coleta rust/rust-a:8080: up
+  coleta rust/rust-b:8080: up
+  coleta watchdog/watchdog:9100: up
+  alertas: nenhum ativo
+
+NGINX  (stub_status)
+  Active connections: 3 
+  server accepts handled requests
+   3881 3881 3881 
+  Reading: 0 Writing: 3 Waiting: 0 
+--- o que o Docker diz
+SERVICE      STATE     <no value>
+nginx        running   healthy
+painel       running   healthy
+prometheus   running   healthy
+rust-a       running   healthy
+rust-b       running   healthy
+toolbox      running   
+trafego      running   
+watchdog     running   healthy
+--- regras de rede
+== nginx
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== rust-a
+   interface: eth0
+     [todos os destinos]      delay 800ms seed 13479259917022726440
+     (tc qdisc show, bruto:)
+       qdisc prio 1: root refcnt 9 bands 16 priomap 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+       qdisc netem 10: parent 1:1 limit 1000 delay 800ms seed 13479259917022726440
+== rust-b
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== watchdog
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== prometheus
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== toolbox
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== painel
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+--- eventos do watchdog (90 s)
+--- o que o usuario viu (Nginx, 60 s)
+janela: ultimos 60s | fonte: nginx | requisicoes: 197
+  por no:       rust-a 99 (50%)   rust-b 98 (50%)   
+  por status:   200=197  
+  com retry:    0 (0.0%)   disponibilidade: 100.0%
+  latencia (s): media 0.807  p50 1.601  p95 1.608  max 1.611
+--- latencia medida NO NO (p95 1m)
+node=rust-a => 0.00475
+node=rust-b => 0.004750000000000001

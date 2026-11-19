@@ -1,0 +1,4 @@
+Active connections: 2 
+server accepts handled requests
+ 2772 2772 2772 
+Reading: 0 Writing: 2 Waiting: 0 

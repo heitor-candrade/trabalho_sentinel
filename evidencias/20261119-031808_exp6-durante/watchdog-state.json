@@ -1,0 +1,54 @@
+{
+  "agora": "2026-11-19T03:18:11.116Z",
+  "config": {
+    "intervalo_s": 5.0,
+    "timeout_s": 2.0,
+    "limite_falhas": 3,
+    "limite_sucessos": 2,
+    "caminho": "/health/ready"
+  },
+  "alvos": {
+    "rust-a": {
+      "url": "http://rust-a:8080",
+      "state": "down",
+      "falhas_consecutivas": 9,
+      "sucessos_consecutivos": 0,
+      "ultima_sondagem_ts": 1795058289.8539057,
+      "ultima_duracao_s": 0.0029163340077502653,
+      "ultimo_resultado": "fail",
+      "ultimo_motivo": "http_503",
+      "sondagens": {
+        "ok": 59,
+        "fail": 9
+      },
+      "falhas_por_motivo": {
+        "http_503": 9
+      },
+      "transicoes": {
+        "up": 0,
+        "down": 1
+      },
+      "idade_ultima_sondagem_s": 1.3
+    },
+    "rust-b": {
+      "url": "http://rust-b:8080",
+      "state": "up",
+      "falhas_consecutivas": 0,
+      "sucessos_consecutivos": 68,
+      "ultima_sondagem_ts": 1795058289.8529203,
+      "ultima_duracao_s": 0.001766291999956593,
+      "ultimo_resultado": "ok",
+      "ultimo_motivo": "ok",
+      "sondagens": {
+        "ok": 68,
+        "fail": 0
+      },
+      "falhas_por_motivo": {},
+      "transicoes": {
+        "up": 0,
+        "down": 0
+      },
+      "idade_ultima_sondagem_s": 1.3
+    }
+  }
+}

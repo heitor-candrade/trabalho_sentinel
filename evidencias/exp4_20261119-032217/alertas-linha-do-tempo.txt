@@ -1,0 +1,3 @@
+2026-11-19T03:22:17Z  (nenhum alerta pending/firing)
+2026-11-19T03:22:27Z  TaxaDeErroAlta=pending desde=2026-11-19T03:22:26Z
+2026-11-19T03:24:23Z  (nenhum alerta pending/firing)

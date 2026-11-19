@@ -1,0 +1,10 @@
+2026-11-19T03:08:41Z experimento 2 iniciado: Latencia alta no Rust A (2500 ms)
+2026-11-19T03:08:41Z ANTES: coletando linha de base
+2026-11-19T03:08:45Z INJETANDO a falha
+2026-11-19T03:08:45Z falha injetada
+2026-11-19T03:08:45Z aguardando 25s: 3 sondagens estouram o timeout de 2 s
+2026-11-19T03:09:10Z DURANTE: observando
+2026-11-19T03:09:45Z RECUPERANDO
+2026-11-19T03:09:45Z aguardando o retorno do servico (ate 60 s)
+2026-11-19T03:09:54Z RECUPERADO: watchdog informa todos os nos UP
+2026-11-19T03:09:57Z DEPOIS: confirmando a recuperacao

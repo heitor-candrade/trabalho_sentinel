@@ -1,0 +1,96 @@
+### durante -- 2026-11-19T03:17:55Z
+seq  status  no        tempo_s   request_id
+1    200     rust-a    0.003965  aa381c2e5291bf5d16e49b7729d9fc06
+2    200     rust-b    0.003041  8cc954982dead4387aa1273b6e104632
+3    200     rust-a    0.004304  b28f8888a4d40e0868696aae2ae7662a
+4    200     rust-b    0.002596  9d42f8c129e9ddcab697680704b4999e
+5    200     rust-a    0.002419  9454f3f1035d964bc0092cf7f0b796a0
+6    200     rust-b    0.002524  007019015b18c975433d4845dc42702b
+7    200     rust-a    0.003087  cf21cd145924a1cf1b2b5888f26b7b8a
+8    200     rust-b    0.002795  43c0fda733f86015a64dc55734193895
+9    200     rust-b    0.003455  93667679d68a8f0c2f17452a42f866ef
+10   200     rust-a    0.004020  6e31747b984c6734886efdd851455781
+11   200     rust-b    0.008204  4653fc660144d21555b7b00284eda3dc
+12   200     rust-a    0.003648  6e9ff41b3b2700e52919921012a20412
+13   200     rust-b    0.004452  d2606a1b94851c5af291f816ca544433
+14   200     rust-a    0.004353  004ae1ca38f6e742b2e0e34df8925377
+15   200     rust-b    0.003879  8bd745c44c1788671342664fbdf91851
+16   200     rust-a    0.004003  aa842bdb37230ff06d68788f728eae27
+17   200     rust-b    0.004946  8ce8d8f93b771ab709410636efedc6d1
+18   200     rust-a    0.004240  f0be9e9b8481001aa6c66532ea7aefef
+19   200     rust-a    0.003553  29cab4d62fe88b41468a89c29f7c8727
+20   200     rust-b    0.003202  226b3e245c4fd1c6321281535a51a306
+--- resumo (20 requisicoes para http://localhost:8080/)
+por no:     rust-a=10  rust-b=10  
+por status: 200=20  
+instante (UTC): 2026-11-19T03:17:57Z
+
+WATCHDOG  (estado | falhas consecutivas | idade da ultima sondagem | ultimo motivo)
+  rust-a   DOWN  falhas=6  idade=2.3   s ultimo=http_503 (6ms)
+  rust-b   UP    falhas=0  idade=2.3   s ultimo=ok (5ms)
+
+NOS RUST  (visao interna de cada no)
+  node=rust-a ready_flag=false effective_ready=false delay_ms=0 uptime_s=701
+  node=rust-b ready_flag=true effective_ready=true delay_ms=0 uptime_s=847
+
+PROMETHEUS  (coleta e alertas)
+  coleta rust/rust-a:8080: up
+  coleta rust/rust-b:8080: up
+  coleta watchdog/watchdog:9100: up
+  ALERTA PENDING NoDown rust-a  [alta]
+
+NGINX  (stub_status)
+  Active connections: 1 
+  server accepts handled requests
+   3227 3227 3227 
+  Reading: 0 Writing: 1 Waiting: 0 
+--- o que o Docker diz
+SERVICE      STATE     <no value>
+nginx        running   healthy
+painel       running   healthy
+prometheus   running   healthy
+rust-a       running   healthy
+rust-b       running   healthy
+toolbox      running   
+trafego      running   
+watchdog     running   healthy
+--- regras de rede
+== nginx
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== rust-a
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== rust-b
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== watchdog
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== prometheus
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== toolbox
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+== painel
+   interface: eth0
+   nenhuma regra de falha ativa (rede normal)
+--- eventos do watchdog (90 s)
+2026-11-19T03:17:34.844Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=8 consecutive_failures=2 state=up
+2026-11-19T03:17:39.842Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=3 consecutive_failures=3 state=down
+2026-11-19T03:17:39.843Z watchdog ERROR event=state_change target=rust-a from=up to=down consecutive_failures=3 reason=http_503
+2026-11-19T03:17:44.845Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=2 consecutive_failures=4 state=down
+2026-11-19T03:17:49.855Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=7 consecutive_failures=5 state=down
+2026-11-19T03:17:54.855Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=6 consecutive_failures=6 state=down
+2026-11-19T03:17:59.851Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=1 consecutive_failures=7 state=down
+2026-11-19T03:18:04.851Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=1 consecutive_failures=8 state=down
+--- o que o usuario viu (Nginx, 60 s)
+janela: ultimos 60s | fonte: nginx | requisicoes: 217
+  por no:       rust-a 108 (50%)   rust-b 109 (50%)   
+  por status:   200=217  
+  com retry:    0 (0.0%)   disponibilidade: 100.0%
+  latencia (s): media 0.001  p50 0.001  p95 0.001  max 0.004
+--- latencia medida NO NO (p95 1m)
+node=rust-a => 0.00475
+node=rust-b => 0.00475

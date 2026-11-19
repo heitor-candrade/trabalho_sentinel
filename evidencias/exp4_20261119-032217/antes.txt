@@ -1,0 +1,42 @@
+### antes -- 2026-11-19T03:22:17Z
+--- 20 requisicoes pelo Nginx
+--- resumo (20 requisicoes para http://localhost:8080/)
+por no:     rust-a=11  rust-b=9  
+por status: 200=20  
+--- estado
+instante (UTC): 2026-11-19T03:22:18Z
+
+WATCHDOG  (estado | falhas consecutivas | idade da ultima sondagem | ultimo motivo)
+  rust-a   UP    falhas=0  idade=3.6   s ultimo=ok (2ms)
+  rust-b   UP    falhas=0  idade=3.6   s ultimo=ok (1ms)
+
+NOS RUST  (visao interna de cada no)
+  node=rust-a ready_flag=true effective_ready=true delay_ms=0 uptime_s=963
+  node=rust-b ready_flag=true effective_ready=true delay_ms=0 uptime_s=1108
+
+PROMETHEUS  (coleta e alertas)
+  coleta rust/rust-a:8080: up
+  coleta rust/rust-b:8080: up
+  coleta watchdog/watchdog:9100: up
+  alertas: nenhum ativo
+
+NGINX  (stub_status)
+  Active connections: 1 
+  server accepts handled requests
+   4290 4290 4290 
+  Reading: 0 Writing: 1 Waiting: 0 
+--- contêineres
+SERVICE      STATE     <no value>
+nginx        running   healthy
+painel       running   healthy
+prometheus   running   healthy
+rust-a       running   healthy
+rust-b       running   healthy
+toolbox      running   
+trafego      running   
+watchdog     running   healthy
+--- reinicios
+nginx reinicios=0 iniciou=2026-11-19T03:03:52.800999993Z
+rust-a reinicios=0 iniciou=2026-11-19T03:06:15.432642773Z
+rust-b reinicios=0 iniciou=2026-11-19T03:03:49.440512894Z
+watchdog reinicios=0 iniciou=2026-11-19T03:12:34.40364285Z

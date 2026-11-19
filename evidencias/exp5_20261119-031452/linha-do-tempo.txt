@@ -1,0 +1,19 @@
+2026-11-19T03:14:52Z experimento extra 5 iniciado: Perda de 30% na saida de rust-a (rede)
+2026-11-19T03:14:52Z comandos: injetar='bash scripts/chaos.sh perda rust-a 30'  recuperar='bash scripts/chaos.sh limpar rust-a'
+2026-11-19T03:14:52Z ANTES: evidence.sh exp5-antes --rede; 20 requisicoes
+[ ok ] evidencias salvas em evidencias/20261119-031452_exp5-antes
+   acoes.log
+2026-11-19T03:15:07Z INJETANDO: bash scripts/chaos.sh perda rust-a 30
+OK  interface=eth0  destino=todos os destinos  netem:  loss 30%
+[info] falha ativa desde 2026-11-19T03:15:08Z (registrada em evidencias/chaos.log). Para desfazer: scripts/chaos.sh limpar rust-a
+2026-11-19T03:15:09Z falha injetada; aguardando 45s
+2026-11-19T03:15:54Z DURANTE: 20 requisicoes, snapshot, docker compose ps, evidence.sh exp5-durante --rede
+[ ok ] evidencias salvas em evidencias/20261119-031607_exp5-durante
+   acoes.log
+2026-11-19T03:16:22Z RECUPERANDO: bash scripts/chaos.sh limpar rust-a
+OK  todas as regras de rede removidas (interface eth0)
+2026-11-19T03:16:23Z RECUPERADO: watchdog informa todos os nos UP
+2026-11-19T03:16:28Z DEPOIS: 20 requisicoes, snapshot, reinicios, evidence.sh exp5-depois --rede
+[ ok ] evidencias salvas em evidencias/20261119-031640_exp5-depois
+   acoes.log
+2026-11-19T03:17:09Z experimento extra 5 concluido

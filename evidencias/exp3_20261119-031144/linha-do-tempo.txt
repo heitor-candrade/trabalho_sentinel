@@ -1,0 +1,10 @@
+2026-11-19T03:11:44Z experimento 3 iniciado: Interromper o watchdog
+2026-11-19T03:11:44Z ANTES: coletando linha de base
+2026-11-19T03:11:48Z INJETANDO a falha
+2026-11-19T03:11:48Z falha injetada
+2026-11-19T03:11:48Z aguardando 40s: idade da ultima sondagem passa de 30 s
+2026-11-19T03:12:29Z DURANTE: observando
+2026-11-19T03:12:33Z RECUPERANDO
+2026-11-19T03:12:34Z aguardando o retorno do servico (ate 60 s)
+2026-11-19T03:12:36Z RECUPERADO: watchdog informa todos os nos UP
+2026-11-19T03:12:39Z DEPOIS: confirmando a recuperacao

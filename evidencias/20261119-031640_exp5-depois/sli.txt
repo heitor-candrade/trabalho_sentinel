@@ -1,0 +1,38 @@
+
+== Requisicoes de usuario por no (req/s, janela 1 min)
+node=rust-b => 3
+node=rust-a => 0.690858846629336
+
+== Taxa de erro 5xx por no (janela 2 min)  [alerta sugerido > 0,02]
+node=rust-b => 0
+node=rust-a => 0
+
+== Latencia p95 por no, medida no no (s, janela 1 min)
+node=rust-a => 0.00475
+node=rust-b => 0.004749999999999999
+
+== Saturacao: requisicoes em andamento por no
+__name__=sentinel_inflight_requests instance=rust-a:8080 job=rust node=rust-a => 1
+__name__=sentinel_inflight_requests instance=rust-b:8080 job=rust node=rust-b => 1
+
+== Prontidao informada pelo proprio no (1 = pronto)
+__name__=sentinel_ready instance=rust-a:8080 job=rust node=rust-a => 1
+__name__=sentinel_ready instance=rust-b:8080 job=rust node=rust-b => 1
+
+== Visao do watchdog: DOWN (1) ou UP (0)
+__name__=watchdog_target_down instance=watchdog:9100 job=watchdog target=rust-a => 0
+__name__=watchdog_target_down instance=watchdog:9100 job=watchdog target=rust-b => 0
+
+== Visao do watchdog: falhas consecutivas
+__name__=watchdog_consecutive_failures instance=watchdog:9100 job=watchdog target=rust-a => 0
+__name__=watchdog_consecutive_failures instance=watchdog:9100 job=watchdog target=rust-b => 0
+
+== Idade da ultima sondagem do watchdog (s)  [monitor parado se > 30]
+instance=watchdog:9100 job=watchdog target=rust-a => 4.260999917984009
+instance=watchdog:9100 job=watchdog target=rust-b => 4.259999990463257
+
+== Alvos coletados pelo Prometheus (1 = coleta ok)
+__name__=up instance=rust-a:8080 job=rust => 1
+__name__=up instance=watchdog:9100 job=watchdog => 1
+__name__=up instance=localhost:9090 job=prometheus => 1
+__name__=up instance=rust-b:8080 job=rust => 1

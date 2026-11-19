@@ -1,0 +1,5 @@
+janela: ultimos 60s | fonte: nginx | requisicoes: 186
+  por no:       rust-a 41 (22%)   rust-b 145 (78%)   
+  por status:   200=186  
+  com retry:    6 (3.2%)   disponibilidade: 100.0%
+  latencia (s): media 0.033  p50 0.001  p95 0.001  max 1.010

@@ -1,0 +1,6 @@
+rotulo=exp6-depois
+instante_utc=2026-11-19T03:18:47Z
+janela_dos_logs=5m
+host=KA00151.local
+kernel=27.2.0
+commit=a5e6a3b

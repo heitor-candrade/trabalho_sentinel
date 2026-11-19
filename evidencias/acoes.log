@@ -7,3 +7,9 @@
 2026-11-17T15:04:46Z admin.sh atraso rust-a 1500
 2026-11-17T15:04:49Z admin.sh atraso rust-a 0
 2026-11-18T15:00:33Z validar --recarregar
+2026-11-19T03:05:23Z fundo start rate=3/s
+2026-11-19T03:05:44Z exp1 stop rust-a
+2026-11-19T03:17:25Z admin.sh ready rust-a 0
+2026-11-19T03:18:23Z admin.sh ready rust-a 1
+2026-11-19T03:26:34Z admin.sh status
+2026-11-19T03:30:17Z admin.sh ready rust-b 1

@@ -1,0 +1,10 @@
+2026-11-19T03:22:17Z experimento 4 iniciado: Respostas de erro (GET /erro)
+2026-11-19T03:22:17Z ANTES: coletando linha de base
+2026-11-19T03:22:21Z INJETANDO a falha
+2026-11-19T03:22:22Z falha injetada
+2026-11-19T03:22:22Z aguardando 15s: janela de 1-2 min das taxas
+2026-11-19T03:22:37Z DURANTE: observando
+2026-11-19T03:22:41Z RECUPERANDO
+2026-11-19T03:22:41Z aguardando o retorno do servico (ate 60 s)
+2026-11-19T03:22:42Z RECUPERADO: watchdog informa todos os nos UP
+2026-11-19T03:22:45Z DEPOIS: confirmando a recuperacao

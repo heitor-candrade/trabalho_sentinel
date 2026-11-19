@@ -1,0 +1,19 @@
+2026-11-19T03:19:17Z experimento extra 7 iniciado: Atraso de rede de 800 ms na saida de rust-a (rede)
+2026-11-19T03:19:17Z comandos: injetar='bash scripts/chaos.sh atraso rust-a 800'  recuperar='bash scripts/chaos.sh limpar rust-a'
+2026-11-19T03:19:17Z ANTES: evidence.sh exp7-antes --rede; 20 requisicoes
+[ ok ] evidencias salvas em evidencias/20261119-031917_exp7-antes
+   acoes.log
+2026-11-19T03:19:32Z INJETANDO: bash scripts/chaos.sh atraso rust-a 800
+OK  interface=eth0  destino=todos os destinos  netem: delay 800ms
+[info] falha ativa desde 2026-11-19T03:19:32Z (registrada em evidencias/chaos.log). Para desfazer: scripts/chaos.sh limpar rust-a
+2026-11-19T03:19:34Z falha injetada; aguardando 40s
+2026-11-19T03:20:14Z DURANTE: 20 requisicoes, snapshot, docker compose ps, evidence.sh exp7-durante --rede
+[ ok ] evidencias salvas em evidencias/20261119-032049_exp7-durante
+   acoes.log
+2026-11-19T03:21:08Z RECUPERANDO: bash scripts/chaos.sh limpar rust-a
+OK  todas as regras de rede removidas (interface eth0)
+2026-11-19T03:21:10Z RECUPERADO: watchdog informa todos os nos UP
+2026-11-19T03:21:15Z DEPOIS: 20 requisicoes, snapshot, reinicios, evidence.sh exp7-depois --rede
+[ ok ] evidencias salvas em evidencias/20261119-032127_exp7-depois
+   acoes.log
+2026-11-19T03:21:57Z experimento extra 7 concluido

@@ -1,0 +1,5 @@
+2026-11-19T03:15:09Z aplicar no=rust-a para=todos atraso=0ms jitter=0ms perda=30%
+2026-11-19T03:16:23Z limpar no=rust-a para=todos
+2026-11-19T03:19:34Z aplicar no=rust-a para=todos atraso=800ms jitter=0ms perda=0%
+2026-11-19T03:21:10Z limpar no=rust-a para=todos
+2026-11-19T03:30:18Z limpar no=rust-b para=todos

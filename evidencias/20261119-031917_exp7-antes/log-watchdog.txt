@@ -1,0 +1,50 @@
+watchdog-1  | 2026-11-19T03:17:19.832197070Z 2026-11-19T03:17:19.832Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=3 consecutive_failures=0 state=up2026-11-19T03:17:19.832Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:17:19.832269736Z 
+watchdog-1  | 2026-11-19T03:17:24.831005686Z 2026-11-19T03:17:24.830Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:17:24.831427228Z 2026-11-19T03:17:24.831Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:17:29.837925222Z 2026-11-19T03:17:29.837Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=3 consecutive_failures=1 state=up2026-11-19T03:17:29.837Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:17:29.837981597Z 
+watchdog-1  | 2026-11-19T03:17:34.844633924Z 2026-11-19T03:17:34.844Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=8 consecutive_failures=2 state=up
+watchdog-1  | 2026-11-19T03:17:34.846020633Z 2026-11-19T03:17:34.845Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=5 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:17:39.843229415Z 2026-11-19T03:17:39.842Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=3 consecutive_failures=3 state=down
+watchdog-1  | 2026-11-19T03:17:39.843257624Z 2026-11-19T03:17:39.843Z watchdog ERROR event=state_change target=rust-a from=up to=down consecutive_failures=3 reason=http_503
+watchdog-1  | 2026-11-19T03:17:39.843306707Z 2026-11-19T03:17:39.843Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:17:44.845365491Z 2026-11-19T03:17:44.845Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:17:44.845464658Z 2026-11-19T03:17:44.845Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=2 consecutive_failures=4 state=down
+watchdog-1  | 2026-11-19T03:17:49.856529070Z 2026-11-19T03:17:49.853Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=5 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:17:49.856604195Z 2026-11-19T03:17:49.855Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=7 consecutive_failures=5 state=down
+watchdog-1  | 2026-11-19T03:17:54.854965811Z 2026-11-19T03:17:54.854Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=5 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:17:54.855733728Z 2026-11-19T03:17:54.855Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=6 consecutive_failures=6 state=down
+watchdog-1  | 2026-11-19T03:17:59.851728885Z 2026-11-19T03:17:59.851Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=1 consecutive_failures=7 state=down
+watchdog-1  | 2026-11-19T03:17:59.852062260Z 2026-11-19T03:17:59.851Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:04.851486377Z 2026-11-19T03:18:04.851Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=1 consecutive_failures=8 state=down
+watchdog-1  | 2026-11-19T03:18:04.852013293Z 2026-11-19T03:18:04.851Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:09.854062744Z 2026-11-19T03:18:09.852Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up2026-11-19T03:18:09.853Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=2 consecutive_failures=9 state=down
+watchdog-1  | 2026-11-19T03:18:09.854180661Z 
+watchdog-1  | 2026-11-19T03:18:14.852926902Z 2026-11-19T03:18:14.852Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=0 consecutive_failures=10 state=down
+watchdog-1  | 2026-11-19T03:18:14.852939694Z 2026-11-19T03:18:14.852Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:19.855049936Z 2026-11-19T03:18:19.854Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:19.855073978Z 2026-11-19T03:18:19.854Z watchdog WARN target=rust-a result=fail reason=http_503 latency_ms=1 consecutive_failures=11 state=down
+watchdog-1  | 2026-11-19T03:18:24.860482096Z 2026-11-19T03:18:24.860Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=5 consecutive_failures=0 state=down
+watchdog-1  | 2026-11-19T03:18:24.860553721Z 2026-11-19T03:18:24.860Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=5 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:29.861472047Z 2026-11-19T03:18:29.860Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:29.861519922Z 2026-11-19T03:18:29.861Z watchdog INFO event=state_change target=rust-a from=down to=up consecutive_failures=0 reason=ok
+watchdog-1  | 2026-11-19T03:18:29.861686880Z 2026-11-19T03:18:29.861Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=5 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:34.859179287Z 2026-11-19T03:18:34.859Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=0 consecutive_failures=0 state=up2026-11-19T03:18:34.859Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:34.859188412Z 
+watchdog-1  | 2026-11-19T03:18:39.861565030Z 2026-11-19T03:18:39.861Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:39.861886405Z 2026-11-19T03:18:39.861Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:44.861340480Z 2026-11-19T03:18:44.860Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:44.861393813Z 2026-11-19T03:18:44.861Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:49.861697055Z 2026-11-19T03:18:49.861Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:49.862629264Z 2026-11-19T03:18:49.862Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:54.861717338Z 2026-11-19T03:18:54.861Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:54.861916505Z 2026-11-19T03:18:54.861Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:59.866717406Z 2026-11-19T03:18:59.866Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:18:59.868330240Z 2026-11-19T03:18:59.867Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:19:04.869628556Z 2026-11-19T03:19:04.869Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=3 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:19:04.872170849Z 2026-11-19T03:19:04.871Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=5 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:19:09.871488206Z 2026-11-19T03:19:09.871Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=1 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:19:09.871929956Z 2026-11-19T03:19:09.871Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:19:14.876022940Z 2026-11-19T03:19:14.875Z watchdog INFO target=rust-a result=ok reason=ok latency_ms=2 consecutive_failures=0 state=up
+watchdog-1  | 2026-11-19T03:19:14.876129857Z 2026-11-19T03:19:14.875Z watchdog INFO target=rust-b result=ok reason=ok latency_ms=4 consecutive_failures=0 state=up

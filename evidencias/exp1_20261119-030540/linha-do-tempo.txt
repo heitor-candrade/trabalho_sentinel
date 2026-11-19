@@ -1,0 +1,10 @@
+2026-11-19T03:05:40Z experimento 1 iniciado: Parar o Rust A
+2026-11-19T03:05:40Z ANTES: coletando linha de base
+2026-11-19T03:05:44Z INJETANDO a falha
+2026-11-19T03:05:44Z falha injetada
+2026-11-19T03:05:44Z aguardando 25s: 3 falhas x 5 s do watchdog + timeout
+2026-11-19T03:06:10Z DURANTE: observando
+2026-11-19T03:06:15Z RECUPERANDO
+2026-11-19T03:06:15Z aguardando o retorno do servico (ate 60 s)
+2026-11-19T03:06:29Z RECUPERADO: watchdog informa todos os nos UP
+2026-11-19T03:06:32Z DEPOIS: confirmando a recuperacao

@@ -1,0 +1,4 @@
+2026-11-19T03:17:10Z  (nenhum alerta pending/firing)
+2026-11-19T03:17:50Z  NoDown{rust-a}=pending desde=2026-11-19T03:17:46Z
+2026-11-19T03:18:05Z  NoDown{rust-a}=firing desde=2026-11-19T03:17:46Z
+2026-11-19T03:18:41Z  (nenhum alerta pending/firing)

@@ -1,0 +1,5 @@
+janela: ultimos 5m | fonte: trafego | requisicoes: 881
+  por no:       rust-a 419 (48%)   rust-b 462 (52%)   
+  por status:   200=881  
+  com retry:    0 (0.0%)   disponibilidade: 100.0%
+  latencia (s): media 0.257  p50 0.001  p95 1.607  max 3.805
