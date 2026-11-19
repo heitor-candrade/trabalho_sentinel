@@ -19,8 +19,10 @@ if [ "$1" = pool ]; then
   exigir_pilha
   grep -q "# POOL:$no\$" "$CONF" || die "linha do $no nao encontrada em $CONF (marcador '# POOL:$no')"
   bak="evidencias/nginx.conf.$(agora_arq).bak"; mkdir -p evidencias; cp "$CONF" "$bak"
-  if [ "$modo" = drenar ]; then sed -i -E "/# POOL:${no}\$/ { /down;/! s/;( +# POOL)/ down;\\1/ }" "$CONF"
-  else sed -i -E "/# POOL:${no}\$/ s/ down;( +# POOL)/;\\1/" "$CONF"; fi
+  # sed portavel (GNU e BSD/macOS): sem "-i" (o BSD exige argumento) e com ";" antes de "}"
+  if [ "$modo" = drenar ]; then sed -E "/# POOL:${no}\$/ { /down;/! s/;( +# POOL)/ down;\\1/; }" "$CONF" > "$CONF.tmp"
+  else sed -E "/# POOL:${no}\$/ s/ down;( +# POOL)/;\\1/" "$CONF" > "$CONF.tmp"; fi
+  mv "$CONF.tmp" "$CONF"
   if recarregar_nginx; then registrar pool.log "$modo $no (copia: $bak)"
   else cp "$bak" "$CONF"; die "configuracao invalida: mudanca DESFEITA (restaurado de $bak)"; fi
   exit 0
