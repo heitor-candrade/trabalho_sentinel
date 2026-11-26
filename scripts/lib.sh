@@ -4,6 +4,10 @@
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT" || exit 1
 
+# Windows (Git Bash/MSYS): impede que caminhos Linux passados ao docker
+# (ex.: /opt/sentinel/admin.sh) sejam reescritos como C:/Program Files/Git/...
+export MSYS_NO_PATHCONV=1
+
 if [ -t 1 ]; then R=$'\e[31m'; G=$'\e[32m'; Y=$'\e[33m'; C=$'\e[36m'; B=$'\e[1m'; N=$'\e[0m'; else R=; G=; Y=; C=; B=; N=; fi
 info() { echo "${C}[info]${N} $*"; }
 ok()   { echo "${G}[ ok ]${N} $*"; }
