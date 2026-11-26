@@ -1,0 +1,9 @@
+# Mantem LF em todos os arquivos de texto, inclusive no Windows (core.autocrlf=true).
+# Scripts com CRLF quebram no bash e dentro dos conteineres Linux.
+* text=auto eol=lf
+
+# Binarios
+*.pdf binary
+*.png binary
+*.jpg binary
+*.jpeg binary
